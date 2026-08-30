@@ -1,0 +1,355 @@
+.app {
+min-height: 100vh;
+padding: 40px;
+font-family: Arial, sans-serif;
+background: #f5f7fa;
+}
+
+.header {
+margin-bottom: 40px;
+}
+
+.header h1 {
+margin-bottom: 10px;
+}
+
+.header p {
+color: #666;
+}
+
+.dashboard {
+display: flex;
+gap: 20px;
+flex-wrap: wrap;
+align-items: stretch;
+}
+
+.summary-card {
+background: white;
+padding: 25px;
+border-radius: 12px;
+min-width: 200px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.summary-card h2 {
+font-size: 18px;
+margin-bottom: 15px;
+}
+
+.summary-card p {
+font-size: 28px;
+font-weight: bold;
+margin: 0;
+}
+
+.budget-form {
+background: white;
+padding: 25px;
+border-radius: 12px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+min-width: 250px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.budget-form label {
+font-weight: bold;
+}
+
+.budget-form input {
+padding: 12px;
+border: 1px solid #ccc;
+border-radius: 6px;
+font-size: 15px;
+}
+
+.budget-btn {
+padding: 12px;
+border: none;
+border-radius: 6px;
+background: #222;
+color: white;
+cursor: pointer;
+font-size: 15px;
+}
+
+.budget-btn:hover {
+opacity: 0.85;
+}
+
+.add-expense-btn {
+padding: 12px 20px;
+border: none;
+border-radius: 8px;
+background: #222;
+color: white;
+font-size: 16px;
+cursor: pointer;
+height: fit-content;
+align-self: center;
+}
+
+.add-expense-btn:hover {
+opacity: 0.85;
+}
+
+/* ==================== SMART BUDGET ALERT ==================== */
+
+.budget-alert {
+margin-top: 30px;
+padding: 20px 25px;
+border-radius: 12px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.budget-alert h2 {
+margin-bottom: 8px;
+}
+
+.budget-alert p {
+margin: 0;
+font-size: 16px;
+}
+
+/* Green - under control */
+.budget-alert.success {
+background: #dcfce7;
+border-left: 6px solid #16a34a;
+}
+
+.budget-alert.success h2 {
+color: #166534;
+}
+
+/* Yellow - approaching budget */
+.budget-alert.caution {
+background: #fef9c3;
+border-left: 6px solid #eab308;
+}
+
+.budget-alert.caution h2 {
+color: #854d0e;
+}
+
+/* Orange - almost reached */
+.budget-alert.warning {
+background: #ffedd5;
+border-left: 6px solid #f97316;
+}
+
+.budget-alert.warning h2 {
+color: #9a3412;
+}
+
+/* Red - exceeded */
+.budget-alert.danger {
+background: #fee2e2;
+border-left: 6px solid #dc2626;
+}
+
+.budget-alert.danger h2 {
+color: #991b1b;
+}
+
+/* Blue - no budget */
+.budget-alert.info {
+background: #dbeafe;
+border-left: 6px solid #2563eb;
+}
+
+.budget-alert.info h2 {
+color: #1e40af;
+}
+
+/* ==================== FORM ==================== */
+
+.form-container {
+background: white;
+margin-top: 30px;
+padding: 30px;
+max-width: 500px;
+border-radius: 12px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.form-container h2 {
+margin-bottom: 25px;
+}
+
+.form-container form {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.form-container label {
+font-weight: bold;
+margin-top: 10px;
+}
+
+.form-container input,
+.form-container select {
+width: 100%;
+box-sizing: border-box;
+padding: 12px;
+border: 1px solid #ccc;
+border-radius: 6px;
+font-size: 15px;
+background: white;
+}
+
+.save-btn,
+.cancel-btn {
+width: 100%;
+padding: 12px;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+font-size: 15px;
+margin-top: 10px;
+}
+
+.save-btn {
+background: #222;
+color: white;
+}
+
+.save-btn:hover {
+opacity: 0.85;
+}
+
+.cancel-btn {
+background: #ddd;
+}
+
+.cancel-btn:hover {
+background: #ccc;
+}
+
+/* ==================== EXPENSE LIST ==================== */
+
+.expense-list {
+margin-top: 40px;
+background: white;
+padding: 25px;
+border-radius: 12px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.expense-list h2 {
+margin-bottom: 20px;
+}
+
+.expense-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 15px;
+padding: 15px 0;
+border-bottom: 1px solid #eee;
+}
+
+.expense-item:last-child {
+border-bottom: none;
+}
+
+.expense-item h3 {
+margin-bottom: 5px;
+}
+
+.expense-item p {
+color: #666;
+margin: 0;
+}
+
+.expense-item strong {
+font-size: 18px;
+}
+
+.edit-btn,
+.delete-btn {
+padding: 8px 14px;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+}
+
+.edit-btn {
+background: #ddd;
+}
+
+.edit-btn:hover {
+background: #ccc;
+}
+
+.delete-btn {
+background: #f1f1f1;
+}
+
+.delete-btn:hover {
+background: #ddd;
+}
+
+/* ==================== ANALYTICS ==================== */
+
+.analytics-section {
+margin-top: 40px;
+background: white;
+padding: 25px;
+border-radius: 12px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.analytics-section h2 {
+margin-bottom: 20px;
+}
+
+.chart-container {
+width: 100%;
+height: 350px;
+}
+
+.category-summary {
+display: flex;
+flex-wrap: wrap;
+gap: 15px;
+margin-top: 20px;
+}
+
+.category-item {
+flex: 1;
+min-width: 150px;
+padding: 15px;
+background: #f5f7fa;
+border-radius: 8px;
+display: flex;
+justify-content: space-between;
+}
+
+/* ==================== MOBILE ==================== */
+
+@media (max-width: 768px) {
+.app {
+padding: 20px;
+}
+
+.dashboard {
+flex-direction: column;
+}
+
+.summary-card,
+.budget-form {
+width: 100%;
+box-sizing: border-box;
+}
+
+.add-expense-btn {
+align-self: stretch;
+}
+
+.expense-item {
+flex-wrap: wrap;
+}
+}
