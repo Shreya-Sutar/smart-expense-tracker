@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 function Register({ onLogin }) {
@@ -9,10 +8,14 @@ function Register({ onLogin }) {
     confirmPassword: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState(false);
+
   const [error, setError] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
@@ -22,16 +25,24 @@ function Register({ onLogin }) {
     setError("");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const name = form.name.trim();
+    const email = form.email.trim().toLowerCase();
 
     if (
-      !form.name.trim() ||
-      !form.email.trim() ||
+      !name ||
+      !email ||
       !form.password ||
       !form.confirmPassword
     ) {
       setError("Please fill in all fields.");
+      return;
+    }
+
+    if (name.length < 2) {
+      setError("Please enter a valid name.");
       return;
     }
 
@@ -45,48 +56,53 @@ function Register({ onLogin }) {
       return;
     }
 
-    const users = JSON.parse(
-      localStorage.getItem("spendwise_users") || "[]"
-    );
+    try {
+      const users = JSON.parse(
+        localStorage.getItem("spendwise_users") || "[]"
+      );
 
-    const exists = users.some(
-      (user) =>
-        user.email.toLowerCase() ===
-        form.email.trim().toLowerCase()
-    );
+      const existingUser = users.find(
+        (user) => user.email.toLowerCase() === email
+      );
 
-    if (exists) {
-      setError("An account with this email already exists.");
-      return;
+      if (existingUser) {
+        setError("An account with this email already exists.");
+        return;
+      }
+
+      const newUser = {
+        id: Date.now(),
+        name,
+        email,
+        password: form.password,
+      };
+
+      const updatedUsers = [...users, newUser];
+
+      localStorage.setItem(
+        "spendwise_users",
+        JSON.stringify(updatedUsers)
+      );
+
+      localStorage.setItem(
+        "spendwise_current_user",
+        JSON.stringify(newUser)
+      );
+
+      onLogin(newUser);
+    } catch {
+      setError("Unable to create account. Please try again.");
     }
-
-    const newUser = {
-      id: Date.now(),
-      name: form.name.trim(),
-      email: form.email.trim().toLowerCase(),
-      password: form.password,
-    };
-
-    localStorage.setItem(
-      "spendwise_users",
-      JSON.stringify([...users, newUser])
-    );
-
-    localStorage.setItem(
-      "spendwise_current_user",
-      JSON.stringify(newUser)
-    );
-
-    onLogin(newUser);
   };
 
   return (
     <div className="auth-page">
+      <div className="auth-background-shape shape-one" />
+      <div className="auth-background-shape shape-two" />
+
       <div className="auth-card register-card">
         <div className="auth-brand">
-          <div className="brand-icon">
-            <span>₹</span>
-          </div>
+          <div className="auth-brand-icon">₹</div>
 
           <div>
             <h1>SpendWise</h1>
@@ -95,56 +111,112 @@ function Register({ onLogin }) {
         </div>
 
         <div className="auth-heading">
+          <span className="auth-eyebrow">GET STARTED</span>
           <h2>Create your account</h2>
-          <p>Start managing your money smarter.</p>
+          <p>
+            Start managing your money smarter today.
+          </p>
         </div>
 
         {error && (
           <div className="form-alert error">
-            <span>{error}</span>
+            <span>⚠</span>
+            <p>{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <label>Full name</label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="register-name">Full name</label>
 
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Enter your name"
-          />
+            <input
+              id="register-name"
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Enter your full name"
+              autoComplete="name"
+            />
+          </div>
 
-          <label>Email address</label>
+          <div className="form-group">
+            <label htmlFor="register-email">
+              Email address
+            </label>
 
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-          />
+            <input
+              id="register-email"
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
+          </div>
 
-          <label>Password</label>
+          <div className="form-group">
+            <label htmlFor="register-password">
+              Password
+            </label>
 
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            placeholder="Minimum 6 characters"
-          />
+            <div className="password-wrapper">
+              <input
+                id="register-password"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Minimum 6 characters"
+                autoComplete="new-password"
+              />
 
-          <label>Confirm password</label>
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() =>
+                  setShowPassword((previous) => !previous)
+                }
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
 
-          <input
-            type="password"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            placeholder="Repeat your password"
-          />
+          <div className="form-group">
+            <label htmlFor="register-confirm-password">
+              Confirm password
+            </label>
+
+            <div className="password-wrapper">
+              <input
+                id="register-confirm-password"
+                type={
+                  showConfirmPassword
+                    ? "text"
+                    : "password"
+                }
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="Repeat your password"
+                autoComplete="new-password"
+              />
+
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() =>
+                  setShowConfirmPassword(
+                    (previous) => !previous
+                  )
+                }
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
 
           <button
             type="submit"
@@ -155,9 +227,10 @@ function Register({ onLogin }) {
         </form>
 
         <div className="auth-switch">
-          Already have an account?
+          <span>Already have an account?</span>
+
           <button type="button" onClick={onLogin}>
-            Login
+            Sign in
           </button>
         </div>
       </div>
@@ -166,4 +239,3 @@ function Register({ onLogin }) {
 }
 
 export default Register;
-
