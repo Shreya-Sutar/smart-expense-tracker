@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+
 import {
   BarChart,
   Bar,
@@ -16,6 +17,7 @@ import {
 } from "recharts";
 
 import "./App.css";
+import AIInsights from "./AIInsights.jsx";
 
 /* =========================================================
    ICONS
@@ -45,6 +47,14 @@ const Icons = {
       <path d="M7 16v-5" />
       <path d="M12 16V7" />
       <path d="M17 16V9" />
+    </svg>
+  ),
+
+  AI: () => (
+    <svg viewBox="0 0 24 24">
+      <rect x="5" y="5" width="14" height="14" rx="3" />
+      <path d="M9 9h6v6H9z" />
+      <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
     </svg>
   ),
 
@@ -103,34 +113,6 @@ const Icons = {
     <svg viewBox="0 0 24 24">
       <path d="M12 5v14" />
       <path d="m18 13-6 6-6-6" />
-    </svg>
-  ),
-
-  Sparkles: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3Z" />
-      <path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z" />
-    </svg>
-  ),
-
-  Lightbulb: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M9 18h6" />
-      <path d="M10 21h4" />
-      <path d="M8.5 14.5C7.5 13.5 7 12.3 7 11a5 5 0 1 1 10 0c0 1.3-.5 2.5-1.5 3.5-.7.7-1.5 1.3-1.5 2.5h-4c0-1.2-.8-1.8-1.5-2.5Z" />
-    </svg>
-  ),
-
-  Alert: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 3 2 21h20L12 3Z" />
-      <path d="M12 9v5M12 18h.01" />
-    </svg>
-  ),
-
-  Check: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="m5 12 4 4L19 6" />
     </svg>
   ),
 };
@@ -231,44 +213,14 @@ const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
 const formatDate = (date) =>
-  new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-
-function playSound(type = "success") {
-  try {
-    const AudioContext =
-      window.AudioContext || window.webkitAudioContext;
-
-    if (!AudioContext) return;
-
-    const context = new AudioContext();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-
-    oscillator.frequency.value =
-      type === "success" ? 700 : 220;
-
-    oscillator.type = "sine";
-
-    gain.gain.setValueAtTime(0.06, context.currentTime);
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      context.currentTime + 0.15
-    );
-
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.15);
-  } catch {
-    // Optional audio.
-  }
-}
+  new Date(`${date}T00:00:00`).toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  );
 
 /* =========================================================
    APP
@@ -277,7 +229,8 @@ function playSound(type = "success") {
 function App() {
   const today = new Date();
 
-  const [activePage, setActivePage] = useState("dashboard");
+  const [activePage, setActivePage] =
+    useState("dashboard");
 
   const [transactions, setTransactions] =
     useState(initialTransactions);
@@ -300,8 +253,6 @@ function App() {
   const [analysisMode, setAnalysisMode] =
     useState("monthly");
 
-  const [aiVisible, setAiVisible] = useState(true);
-
   const [form, setForm] = useState({
     title: "",
     amount: "",
@@ -311,7 +262,7 @@ function App() {
   });
 
   /* =======================================================
-     AVAILABLE YEARS
+     YEARS
   ======================================================= */
 
   const availableYears = useMemo(() => {
@@ -326,10 +277,10 @@ function App() {
     });
 
     years.add(today.getFullYear());
-    years.add(today.getFullYear() - 1);
-    years.add(today.getFullYear() + 1);
 
-    return Array.from(years).sort((a, b) => b - a);
+    return Array.from(years).sort(
+      (a, b) => b - a
+    );
   }, [transactions]);
 
   /* =======================================================
@@ -342,7 +293,9 @@ function App() {
         `${transaction.date}T00:00:00`
       );
 
-      if (date.getFullYear() !== selectedYear) {
+      if (
+        date.getFullYear() !== selectedYear
+      ) {
         return false;
       }
 
@@ -367,7 +320,10 @@ function App() {
     () =>
       selectedTransactions
         .filter((t) => t.type === "income")
-        .reduce((sum, t) => sum + Number(t.amount), 0),
+        .reduce(
+          (sum, t) => sum + Number(t.amount || 0),
+          0
+        ),
     [selectedTransactions]
   );
 
@@ -375,7 +331,10 @@ function App() {
     () =>
       selectedTransactions
         .filter((t) => t.type === "expense")
-        .reduce((sum, t) => sum + Number(t.amount), 0),
+        .reduce(
+          (sum, t) => sum + Number(t.amount || 0),
+          0
+        ),
     [selectedTransactions]
   );
 
@@ -387,7 +346,7 @@ function App() {
       : 0;
 
   /* =======================================================
-     FILTERED TRANSACTIONS
+     FILTER
   ======================================================= */
 
   const filteredTransactions = useMemo(() => {
@@ -427,9 +386,9 @@ function App() {
           date.getMonth() === index
         ) {
           if (transaction.type === "expense") {
-            expense += Number(transaction.amount);
+            expense += Number(transaction.amount || 0);
           } else {
-            incomeAmount += Number(transaction.amount);
+            incomeAmount += Number(transaction.amount || 0);
           }
         }
       });
@@ -454,17 +413,19 @@ function App() {
       .forEach((transaction) => {
         map[transaction.category] =
           (map[transaction.category] || 0) +
-          Number(transaction.amount);
+          Number(transaction.amount || 0);
       });
 
-    return Object.entries(map).map(([name, value]) => ({
-      name,
-      value,
-    }));
+    return Object.entries(map).map(
+      ([name, value]) => ({
+        name,
+        value,
+      })
+    );
   }, [selectedTransactions]);
 
   /* =======================================================
-     TREND DATA
+     TREND
   ======================================================= */
 
   const trendData = useMemo(() => {
@@ -478,7 +439,7 @@ function App() {
 
     return sorted.map((transaction) => {
       if (transaction.type === "expense") {
-        runningTotal += Number(transaction.amount);
+        runningTotal += Number(transaction.amount || 0);
       }
 
       return {
@@ -494,251 +455,7 @@ function App() {
   }, [selectedTransactions]);
 
   /* =======================================================
-     YEARLY ANALYSIS
-  ======================================================= */
-
-  const yearlyAnalysis = useMemo(() => {
-    const yearlyTransactions = transactions.filter(
-      (transaction) => {
-        const date = new Date(
-          `${transaction.date}T00:00:00`
-        );
-
-        return date.getFullYear() === selectedYear;
-      }
-    );
-
-    let yearlyIncome = 0;
-    let yearlyExpenses = 0;
-
-    yearlyTransactions.forEach((transaction) => {
-      if (transaction.type === "income") {
-        yearlyIncome += Number(transaction.amount);
-      } else {
-        yearlyExpenses += Number(transaction.amount);
-      }
-    });
-
-    const monthlyExpenses = months.map(
-      (month, index) => {
-        const value = yearlyTransactions
-          .filter((transaction) => {
-            const date = new Date(
-              `${transaction.date}T00:00:00`
-            );
-
-            return (
-              date.getMonth() === index &&
-              transaction.type === "expense"
-            );
-          })
-          .reduce(
-            (sum, transaction) =>
-              sum + Number(transaction.amount),
-            0
-          );
-
-        return {
-          month,
-          shortMonth: month.substring(0, 3),
-          value,
-        };
-      }
-    );
-
-    const highestMonth = monthlyExpenses.reduce(
-      (highest, current) =>
-        current.value > highest.value
-          ? current
-          : highest,
-      {
-        month: "None",
-        value: 0,
-      }
-    );
-
-    const monthsWithData = monthlyExpenses.filter(
-      (item) => item.value > 0
-    );
-
-    const lowestMonth =
-      monthsWithData.length > 0
-        ? monthsWithData.reduce(
-            (lowest, current) =>
-              current.value < lowest.value
-                ? current
-                : lowest
-          )
-        : {
-            month: "None",
-            value: 0,
-          };
-
-    const categoryMap = {};
-
-    yearlyTransactions
-      .filter(
-        (transaction) =>
-          transaction.type === "expense"
-      )
-      .forEach((transaction) => {
-        categoryMap[transaction.category] =
-          (categoryMap[transaction.category] || 0) +
-          Number(transaction.amount);
-      });
-
-    const highestCategory = Object.entries(
-      categoryMap
-    ).reduce(
-      (highest, [category, value]) =>
-        value > highest.value
-          ? { category, value }
-          : highest,
-      {
-        category: "None",
-        value: 0,
-      }
-    );
-
-    return {
-      yearlyIncome,
-      yearlyExpenses,
-      yearlySavings:
-        yearlyIncome - yearlyExpenses,
-      monthlyExpenses,
-      highestMonth,
-      lowestMonth,
-      highestCategory,
-    };
-  }, [transactions, selectedYear]);
-
-  /* =======================================================
-     AI SPENDING INSIGHTS
-  ======================================================= */
-
-  const aiInsights = useMemo(() => {
-    if (selectedTransactions.length === 0) {
-      return {
-        summary:
-          "There is not enough transaction data yet. Add a few transactions and SpendWise will analyze your spending.",
-        category:
-          "No spending category is available yet.",
-        recommendation:
-          "Start by recording your daily expenses so your financial pattern can be analyzed.",
-        status: "neutral",
-        score: 0,
-      };
-    }
-
-    const expenseTransactions =
-      selectedTransactions.filter(
-        (t) => t.type === "expense"
-      );
-
-    if (expenseTransactions.length === 0) {
-      return {
-        summary:
-          "Great start! You have recorded income but no expenses for this period.",
-        category:
-          "No expense category is dominating your spending.",
-        recommendation:
-          "Continue tracking every expense to build a reliable spending pattern.",
-        status: "positive",
-        score: 90,
-      };
-    }
-
-    const categoryTotals = {};
-
-    expenseTransactions.forEach((transaction) => {
-      categoryTotals[transaction.category] =
-        (categoryTotals[transaction.category] || 0) +
-        Number(transaction.amount);
-    });
-
-    const sortedCategories = Object.entries(
-      categoryTotals
-    ).sort((a, b) => b[1] - a[1]);
-
-    const topCategory = sortedCategories[0];
-
-    const expenseRatio =
-      income > 0 ? expenses / income : 1;
-
-    const averageExpense =
-      expenses / expenseTransactions.length;
-
-    let status = "positive";
-    let score = 85;
-
-    if (budget > 0 && expenses > budget) {
-      status = "danger";
-      score = 45;
-    } else if (expenseRatio > 0.8) {
-      status = "warning";
-      score = 60;
-    } else if (expenseRatio > 0.6) {
-      status = "warning";
-      score = 72;
-    }
-
-    let summary;
-
-    if (budget > 0 && expenses > budget) {
-      summary = `Your spending is ${formatCurrency(
-        expenses - budget
-      )} above your budget. Consider reducing non-essential expenses.`;
-    } else if (income > 0 && expenseRatio < 0.5) {
-      summary = `Your expenses are using only ${Math.round(
-        expenseRatio * 100
-      )}% of your income. Your current spending pattern looks healthy.`;
-    } else if (income > 0) {
-      summary = `You have spent ${Math.round(
-        expenseRatio * 100
-      )}% of your income in this period. Keep an eye on discretionary spending.`;
-    } else {
-      summary = `You have spent ${formatCurrency(
-        expenses
-      )} during this period. Add income information for a more complete analysis.`;
-    }
-
-    const category = `${topCategory[0]} is your highest spending category at ${formatCurrency(
-      topCategory[1]
-    )}.`;
-
-    let recommendation;
-
-    if (budget > 0 && expenses > budget) {
-      recommendation = `Try reducing spending in ${topCategory[0]} first. Your average recorded expense is ${formatCurrency(
-        averageExpense
-      )}.`;
-    } else if (topCategory[1] > expenses * 0.4) {
-      recommendation = `${topCategory[0]} represents a large part of your spending. Setting a smaller limit for this category could improve your savings.`;
-    } else if (income > expenses) {
-      recommendation = `You currently have ${formatCurrency(
-        income - expenses
-      )} left after expenses. Consider saving part of it before making additional purchases.`;
-    } else {
-      recommendation =
-        "Track your expenses consistently and review your highest spending category each week.";
-    }
-
-    return {
-      summary,
-      category,
-      recommendation,
-      status,
-      score,
-    };
-  }, [
-    selectedTransactions,
-    income,
-    expenses,
-    budget,
-  ]);
-
-  /* =======================================================
-     MODAL FUNCTIONS
+     MODAL
   ======================================================= */
 
   const openAddModal = () => {
@@ -749,7 +466,7 @@ function App() {
       amount: "",
       category: "Food",
       type: "expense",
-      date: today.toISOString().split("T")[0],
+      date: new Date().toISOString().split("T")[0],
     });
 
     setShowModal(true);
@@ -759,13 +476,13 @@ function App() {
     setEditingTransaction(transaction);
 
     setForm({
-      title: transaction.title,
-      amount: transaction.amount,
+      title: transaction.title || "",
+      amount: String(transaction.amount || ""),
       category:
         transaction.type === "income"
           ? "Income"
-          : transaction.category,
-      type: transaction.type,
+          : transaction.category || "Food",
+      type: transaction.type || "expense",
       date: transaction.date,
     });
 
@@ -778,7 +495,7 @@ function App() {
   };
 
   /* =======================================================
-     FORM
+     FORM — FIXED
   ======================================================= */
 
   const handleChange = (event) => {
@@ -791,13 +508,13 @@ function App() {
   };
 
   const handleTypeChange = (event) => {
-    const value = event.target.value;
+    const type = event.target.value;
 
     setForm((previous) => ({
       ...previous,
-      type: value,
+      type,
       category:
-        value === "income"
+        type === "income"
           ? "Income"
           : previous.category === "Income"
           ? "Food"
@@ -811,48 +528,22 @@ function App() {
     const title = form.title.trim();
     const amount = Number(form.amount);
 
-    if (
-      !title ||
-      !amount ||
-      amount <= 0 ||
-      !form.date
-    ) {
-      playSound("error");
-
-      window.alert(
-        "Please enter valid transaction details."
-      );
-
+    if (!title) {
+      window.alert("Please enter a transaction name.");
       return;
     }
 
-    if (editingTransaction) {
-      setTransactions((previous) =>
-        previous.map((transaction) =>
-          transaction.id === editingTransaction.id
-            ? {
-                ...transaction,
-                title,
-                amount,
-                category:
-                  form.type === "income"
-                    ? "Income"
-                    : form.category,
-                type: form.type,
-                date: form.date,
-              }
-            : transaction
-        )
-      );
-
-      playSound("success");
-      closeModal();
-
+    if (!form.amount || !Number.isFinite(amount) || amount <= 0) {
+      window.alert("Please enter a valid amount.");
       return;
     }
 
-    const newTransaction = {
-      id: Date.now(),
+    if (!form.date) {
+      window.alert("Please select a date.");
+      return;
+    }
+
+    const transactionData = {
       title,
       amount,
       category:
@@ -863,30 +554,25 @@ function App() {
       date: form.date,
     };
 
-    const newExpenseTotal =
-      expenses +
-      (form.type === "expense" ? amount : 0);
-
-    setTransactions((previous) => [
-      newTransaction,
-      ...previous,
-    ]);
-
-    playSound("success");
-
-    if (
-      form.type === "expense" &&
-      newExpenseTotal > budget
-    ) {
-      setTimeout(() => {
-        playSound("error");
-
-        window.alert(
-          `Budget exceeded!\n\nYour spending has crossed the ${formatCurrency(
-            budget
-          )} budget.`
-        );
-      }, 200);
+    if (editingTransaction) {
+      setTransactions((previous) =>
+        previous.map((transaction) =>
+          transaction.id === editingTransaction.id
+            ? {
+                ...transaction,
+                ...transactionData,
+              }
+            : transaction
+        )
+      );
+    } else {
+      setTransactions((previous) => [
+        {
+          id: Date.now(),
+          ...transactionData,
+        },
+        ...previous,
+      ]);
     }
 
     closeModal();
@@ -905,21 +591,16 @@ function App() {
 
     setTransactions((previous) =>
       previous.filter(
-        (transaction) =>
-          transaction.id !== id
+        (transaction) => transaction.id !== id
       )
     );
-
-    playSound("success");
   };
 
   /* =======================================================
-     PERIOD SELECTOR
+     PERIOD
   ======================================================= */
 
-  const PeriodSelector = ({
-    title = "Analysis Period",
-  }) => (
+  const PeriodSelector = ({ title }) => (
     <div className="period-selector">
       <div className="period-info">
         <span>{title}</span>
@@ -941,7 +622,7 @@ function App() {
           }
         >
           {availableYears.map((year) => (
-            <option value={year} key={year}>
+            <option key={year} value={year}>
               {year}
             </option>
           ))}
@@ -951,12 +632,10 @@ function App() {
           value={
             analysisMode === "yearly"
               ? "yearly"
-              : selectedMonth
+              : String(selectedMonth)
           }
           onChange={(event) => {
-            if (
-              event.target.value === "yearly"
-            ) {
+            if (event.target.value === "yearly") {
               setAnalysisMode("yearly");
             } else {
               setAnalysisMode("monthly");
@@ -968,8 +647,8 @@ function App() {
         >
           {months.map((month, index) => (
             <option
-              value={index}
               key={month}
+              value={index}
             >
               {month}
             </option>
@@ -984,14 +663,14 @@ function App() {
   );
 
   /* =======================================================
-     STAT CARD
+     STAT
   ======================================================= */
 
   const StatCard = ({
     title,
     value,
     subtitle,
-    type = "default",
+    type,
     icon,
   }) => (
     <div className={`stat-card ${type}`}>
@@ -1006,158 +685,10 @@ function App() {
       </div>
 
       <div className="stat-icon">
-        {icon || <Icons.Wallet />}
+        {icon}
       </div>
     </div>
   );
-
-  /* =======================================================
-     AI INSIGHTS COMPONENT
-  ======================================================= */
-
-  const AIInsights = () => {
-    if (!aiVisible) return null;
-
-    return (
-      <section className="ai-insights-card">
-        <div className="ai-header">
-          <div className="ai-title-wrapper">
-            <div className="ai-icon">
-              <Icons.Sparkles />
-            </div>
-
-            <div>
-              <span className="ai-label">
-                AI FINANCIAL ASSISTANT
-              </span>
-
-              <h2>
-                Smart Spending Insights
-              </h2>
-
-              <p>
-                Personalized analysis based on
-                your transaction history.
-              </p>
-            </div>
-          </div>
-
-          <button
-            className="ai-close"
-            onClick={() =>
-              setAiVisible(false)
-            }
-            title="Hide AI insights"
-          >
-            <Icons.Close />
-          </button>
-        </div>
-
-        <div className="ai-score-row">
-          <div className="ai-score">
-            <div className="score-circle">
-              <strong>
-                {aiInsights.score}
-              </strong>
-
-              <span>/100</span>
-            </div>
-
-            <div>
-              <strong>
-                Financial Health
-              </strong>
-
-              <small>
-                Based on current spending
-              </small>
-            </div>
-          </div>
-
-          <div
-            className={`ai-status ${aiInsights.status}`}
-          >
-            {aiInsights.status ===
-              "danger" && (
-              <Icons.Alert />
-            )}
-
-            {aiInsights.status ===
-              "warning" && (
-              <Icons.Alert />
-            )}
-
-            {aiInsights.status ===
-              "positive" && (
-              <Icons.Check />
-            )}
-
-            {aiInsights.status ===
-              "neutral" && (
-              <Icons.Lightbulb />
-            )}
-
-            <span>
-              {aiInsights.status ===
-              "danger"
-                ? "Needs attention"
-                : aiInsights.status ===
-                  "warning"
-                ? "Watch your spending"
-                : aiInsights.status ===
-                  "positive"
-                ? "Looking healthy"
-                : "Building insights"}
-            </span>
-          </div>
-        </div>
-
-        <div className="ai-grid">
-          <div className="ai-insight">
-            <div className="ai-insight-icon">
-              <Icons.Sparkles />
-            </div>
-
-            <div>
-              <span>SUMMARY</span>
-
-              <p>
-                {aiInsights.summary}
-              </p>
-            </div>
-          </div>
-
-          <div className="ai-insight">
-            <div className="ai-insight-icon">
-              <Icons.Wallet />
-            </div>
-
-            <div>
-              <span>SPENDING PATTERN</span>
-
-              <p>
-                {aiInsights.category}
-              </p>
-            </div>
-          </div>
-
-          <div className="ai-insight recommendation">
-            <div className="ai-insight-icon">
-              <Icons.Lightbulb />
-            </div>
-
-            <div>
-              <span>RECOMMENDATION</span>
-
-              <p>
-                {aiInsights.recommendation}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  };
 
   /* =======================================================
      TRANSACTION LIST
@@ -1175,13 +706,11 @@ function App() {
             <Icons.Wallet />
           </div>
 
-          <strong>
-            No transactions found
-          </strong>
+          <strong>No transactions found</strong>
 
           <span>
-            Add a transaction to start
-            tracking your money.
+            Add a transaction to start tracking
+            your money.
           </span>
         </div>
       );
@@ -1210,12 +739,8 @@ function App() {
 
                 <small>
                   {transaction.category}
-
                   <span>•</span>
-
-                  {formatDate(
-                    transaction.date
-                  )}
+                  {formatDate(transaction.date)}
                 </small>
               </div>
             </div>
@@ -1223,34 +748,30 @@ function App() {
             <div
               className={`transaction-amount ${transaction.type}`}
             >
-              {transaction.type ===
-              "income"
+              {transaction.type === "income"
                 ? "+"
                 : "-"}
-
-              {formatCurrency(
-                transaction.amount
-              )}
+              {formatCurrency(transaction.amount)}
             </div>
 
             <div className="transaction-actions">
               <button
+                type="button"
                 onClick={() =>
                   openEditModal(transaction)
                 }
-                title="Edit transaction"
+                title="Edit"
               >
                 <Icons.Edit />
               </button>
 
               <button
+                type="button"
                 className="delete-action"
                 onClick={() =>
-                  deleteTransaction(
-                    transaction.id
-                  )
+                  deleteTransaction(transaction.id)
                 }
-                title="Delete transaction"
+                title="Delete"
               >
                 <Icons.Trash />
               </button>
@@ -1262,7 +783,7 @@ function App() {
   };
 
   /* =======================================================
-     PAGE HEADER
+     HEADER
   ======================================================= */
 
   const PageHeader = ({
@@ -1298,6 +819,7 @@ function App() {
         description="Track your money and understand your spending."
         action={
           <button
+            type="button"
             className="primary-button"
             onClick={openAddModal}
           >
@@ -1313,11 +835,7 @@ function App() {
         <StatCard
           title="Total Balance"
           value={balance}
-          subtitle={
-            analysisMode === "yearly"
-              ? `${selectedYear} balance`
-              : "Income minus expenses"
-          }
+          subtitle="Income minus expenses"
           type={
             balance >= 0
               ? "balance-card"
@@ -1362,8 +880,6 @@ function App() {
         />
       </div>
 
-      <AIInsights />
-
       <div className="dashboard-grid">
         <div className="panel chart-panel">
           <div className="panel-header">
@@ -1372,16 +888,10 @@ function App() {
                 FINANCIAL OVERVIEW
               </span>
 
-              <h3>
-                {analysisMode ===
-                "yearly"
-                  ? `${selectedYear} Monthly Spending`
-                  : "Monthly Spending"}
-              </h3>
+              <h3>Monthly Spending</h3>
 
               <p>
-                Income compared with
-                expenses
+                Income compared with expenses
               </p>
             </div>
           </div>
@@ -1391,15 +901,7 @@ function App() {
               width="100%"
               height="100%"
             >
-              <BarChart
-                data={monthlyData}
-                margin={{
-                  top: 10,
-                  right: 10,
-                  left: 0,
-                  bottom: 0,
-                }}
-              >
+              <BarChart data={monthlyData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
@@ -1414,9 +916,6 @@ function App() {
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) =>
-                    `₹${value / 1000}k`
-                  }
                 />
 
                 <Tooltip
@@ -1483,10 +982,8 @@ function App() {
 
           <div className="budget-meta">
             <span>
-              {Math.round(
-                budgetPercentage
-              )}
-              % used
+              {Math.round(budgetPercentage)}%
+              {" "}used
             </span>
 
             <span>
@@ -1520,9 +1017,7 @@ function App() {
                   setBudget(
                     Math.max(
                       0,
-                      Number(
-                        event.target.value
-                      )
+                      Number(event.target.value) || 0
                     )
                   )
                 }
@@ -1539,25 +1034,18 @@ function App() {
               ACTIVITY
             </span>
 
-            <h3>
-              Recent Transactions
-            </h3>
+            <h3>Recent Transactions</h3>
 
             <p>
-              Latest activity for{" "}
-              {analysisMode ===
-              "yearly"
-                ? selectedYear
-                : `${months[selectedMonth]} ${selectedYear}`}
+              Your latest financial activity
             </p>
           </div>
 
           <button
+            type="button"
             className="text-button"
             onClick={() =>
-              setActivePage(
-                "transactions"
-              )
+              setActivePage("transactions")
             }
           >
             View All →
@@ -1581,6 +1069,7 @@ function App() {
         description="Manage all your income and expenses."
         action={
           <button
+            type="button"
             className="primary-button"
             onClick={openAddModal}
           >
@@ -1598,11 +1087,10 @@ function App() {
             <Icons.Search />
 
             <input
+              type="search"
               value={search}
               onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
+                setSearch(event.target.value)
               }
               placeholder="Search transactions..."
             />
@@ -1610,8 +1098,7 @@ function App() {
 
           <div className="transaction-count">
             {filteredTransactions.length}{" "}
-            {filteredTransactions.length ===
-            1
+            {filteredTransactions.length === 1
               ? "transaction"
               : "transactions"}
           </div>
@@ -1623,247 +1110,229 @@ function App() {
   );
 
   /* =======================================================
-     ANALYTICS PAGE
+     ANALYTICS
   ======================================================= */
 
-  const AnalyticsPage = () => {
-    const savingsRate =
-      yearlyAnalysis.yearlyIncome > 0
-        ? Math.round(
-            (yearlyAnalysis.yearlySavings /
-              yearlyAnalysis.yearlyIncome) *
-              100
-          )
-        : 0;
+  const AnalyticsPage = () => (
+    <>
+      <PageHeader
+        eyebrow="INSIGHTS"
+        title="Analytics"
+        description="Visualize your financial habits and spending patterns."
+      />
 
-    return (
-      <>
-        <PageHeader
-          eyebrow="INSIGHTS"
-          title="Analytics"
-          description="Visualize your financial habits and spending patterns."
-        />
+      <PeriodSelector title="Analytics Period" />
 
-        <PeriodSelector title="Analytics Period" />
+      <div className="analytics-stats">
+        <div className="analytics-mini-card">
+          <span>Total Income</span>
+          <strong>
+            {formatCurrency(income)}
+          </strong>
+        </div>
 
-        {analysisMode === "yearly" ? (
-          <>
-            <div className="analytics-stats">
-              <div className="analytics-mini-card">
-                <span>Yearly Income</span>
+        <div className="analytics-mini-card">
+          <span>Total Expenses</span>
+          <strong>
+            {formatCurrency(expenses)}
+          </strong>
+        </div>
 
-                <strong>
-                  {formatCurrency(
-                    yearlyAnalysis.yearlyIncome
-                  )}
-                </strong>
-              </div>
+        <div className="analytics-mini-card">
+          <span>Savings</span>
+          <strong>
+            {formatCurrency(
+              Math.max(balance, 0)
+            )}
+          </strong>
+        </div>
 
-              <div className="analytics-mini-card">
-                <span>Yearly Expenses</span>
+        <div className="analytics-mini-card">
+          <span>Budget Used</span>
+          <strong>
+            {Math.round(budgetPercentage)}%
+          </strong>
+        </div>
+      </div>
 
-                <strong>
-                  {formatCurrency(
-                    yearlyAnalysis.yearlyExpenses
-                  )}
-                </strong>
-              </div>
+      <div className="analytics-grid">
+        <div className="panel chart-panel">
+          <div className="panel-header">
+            <div>
+              <span className="panel-label">
+                COMPARISON
+              </span>
 
-              <div className="analytics-mini-card">
-                <span>Yearly Savings</span>
-
-                <strong>
-                  {formatCurrency(
-                    yearlyAnalysis.yearlySavings
-                  )}
-                </strong>
-              </div>
-
-              <div className="analytics-mini-card">
-                <span>Savings Rate</span>
-
-                <strong>
-                  {savingsRate}%
-                </strong>
-              </div>
-            </div>
-
-            <div className="yearly-summary">
-              <div className="yearly-summary-card">
-                <span>
-                  Highest Spending Month
-                </span>
-
-                <strong>
-                  {
-                    yearlyAnalysis
-                      .highestMonth
-                      .month
-                  }
-                </strong>
-
-                <small>
-                  {formatCurrency(
-                    yearlyAnalysis
-                      .highestMonth
-                      .value
-                  )}
-                </small>
-              </div>
-
-              <div className="yearly-summary-card">
-                <span>
-                  Lowest Spending Month
-                </span>
-
-                <strong>
-                  {
-                    yearlyAnalysis
-                      .lowestMonth
-                      .month
-                  }
-                </strong>
-
-                <small>
-                  {formatCurrency(
-                    yearlyAnalysis
-                      .lowestMonth
-                      .value
-                  )}
-                </small>
-              </div>
-
-              <div className="yearly-summary-card">
-                <span>
-                  Top Spending Category
-                </span>
-
-                <strong>
-                  {
-                    yearlyAnalysis
-                      .highestCategory
-                      .category
-                  }
-                </strong>
-
-                <small>
-                  {formatCurrency(
-                    yearlyAnalysis
-                      .highestCategory
-                      .value
-                  )}
-                </small>
-              </div>
-
-              <div className="yearly-summary-card">
-                <span>Savings Rate</span>
-
-                <strong>
-                  {savingsRate}%
-                </strong>
-
-                <small>
-                  of income saved
-                </small>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="analytics-stats">
-            <div className="analytics-mini-card">
-              <span>Total Income</span>
-
-              <strong>
-                {formatCurrency(income)}
-              </strong>
-            </div>
-
-            <div className="analytics-mini-card">
-              <span>Total Expenses</span>
-
-              <strong>
-                {formatCurrency(expenses)}
-              </strong>
-            </div>
-
-            <div className="analytics-mini-card">
-              <span>Savings</span>
-
-              <strong>
-                {formatCurrency(
-                  Math.max(balance, 0)
-                )}
-              </strong>
-            </div>
-
-            <div className="analytics-mini-card">
-              <span>Budget Used</span>
-
-              <strong>
-                {Math.round(
-                  budgetPercentage
-                )}
-                %
-              </strong>
+              <h3>
+                Income vs Expenses
+              </h3>
             </div>
           </div>
-        )}
 
-        <div className="analytics-grid">
-          <div className="panel chart-panel">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">
-                  COMPARISON
-                </span>
+          <div className="large-chart">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
+              <BarChart
+                data={
+                  analysisMode === "yearly"
+                    ? monthlyData
+                    : [
+                        {
+                          month:
+                            months[
+                              selectedMonth
+                            ].substring(0, 3),
+                          income,
+                          expense: expenses,
+                        },
+                      ]
+                }
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
 
-                <h3>
-                  {analysisMode ===
-                  "yearly"
-                    ? `${selectedYear} Income vs Expenses`
-                    : `${months[selectedMonth]} ${selectedYear}`}
-                </h3>
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                />
 
-                <p>
-                  Compare your financial
-                  activity
-                </p>
-              </div>
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <Tooltip
+                  formatter={(value) =>
+                    formatCurrency(value)
+                  }
+                />
+
+                <Legend />
+
+                <Bar
+                  dataKey="income"
+                  name="Income"
+                  fill="#10b981"
+                  radius={[8, 8, 0, 0]}
+                />
+
+                <Bar
+                  dataKey="expense"
+                  name="Expenses"
+                  fill="#ef4444"
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="panel chart-panel">
+          <div className="panel-header">
+            <div>
+              <span className="panel-label">
+                BREAKDOWN
+              </span>
+
+              <h3>
+                Expenses by Category
+              </h3>
             </div>
+          </div>
 
-            <div className="large-chart">
+          <div className="pie-chart-container">
+            {categoryData.length === 0 ? (
+              <div className="empty-state">
+                <strong>
+                  No expense data
+                </strong>
+
+                <span>
+                  Add an expense to see the
+                  breakdown.
+                </span>
+              </div>
+            ) : (
               <ResponsiveContainer
                 width="100%"
                 height="100%"
               >
-                <BarChart
-                  data={
-                    analysisMode ===
-                    "yearly"
-                      ? monthlyData
-                      : [
-                          {
-                            month:
-                              months[
-                                selectedMonth
-                              ].substring(
-                                0,
-                                3
-                              ),
-                            income,
-                            expense:
-                              expenses,
-                          },
-                        ]
-                  }
-                >
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {categoryData.map(
+                      (entry, index) => (
+                        <Cell
+                          key={entry.name}
+                          fill={
+                            categoryColors[
+                              index %
+                                categoryColors.length
+                            ]
+                          }
+                        />
+                      )
+                    )}
+                  </Pie>
+
+                  <Tooltip
+                    formatter={(value) =>
+                      formatCurrency(value)
+                    }
+                  />
+
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="panel chart-panel full-width">
+          <div className="panel-header">
+            <div>
+              <span className="panel-label">
+                SPENDING TREND
+              </span>
+
+              <h3>
+                Cumulative Spending
+              </h3>
+            </div>
+          </div>
+
+          <div className="large-chart">
+            {trendData.length === 0 ? (
+              <div className="empty-state">
+                <strong>
+                  No spending data
+                </strong>
+              </div>
+            ) : (
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
+                <LineChart data={trendData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
                   />
 
                   <XAxis
-                    dataKey="month"
+                    dataKey="date"
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1879,257 +1348,25 @@ function App() {
                     }
                   />
 
-                  <Legend />
-
-                  <Bar
-                    dataKey="income"
-                    name="Income"
-                    fill="#10b981"
-                    radius={[8, 8, 0, 0]}
+                  <Line
+                    type="monotone"
+                    dataKey="spending"
+                    name="Spending"
+                    stroke="#6366f1"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
                   />
-
-                  <Bar
-                    dataKey="expense"
-                    name="Expense"
-                    fill="#ef4444"
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
+                </LineChart>
               </ResponsiveContainer>
-            </div>
+            )}
           </div>
-
-          <div className="panel chart-panel">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">
-                  BREAKDOWN
-                </span>
-
-                <h3>
-                  Expenses by Category
-                </h3>
-
-                <p>
-                  Where your money is going
-                </p>
-              </div>
-            </div>
-
-            <div className="pie-chart-container">
-              {categoryData.length ===
-              0 ? (
-                <div className="empty-state">
-                  <strong>
-                    No expense data
-                  </strong>
-
-                  <span>
-                    Add an expense to see
-                    the breakdown.
-                  </span>
-                </div>
-              ) : (
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={65}
-                      outerRadius={105}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {categoryData.map(
-                        (
-                          entry,
-                          index
-                        ) => (
-                          <Cell
-                            key={`${entry.name}-${index}`}
-                            fill={
-                              categoryColors[
-                                index %
-                                  categoryColors.length
-                              ]
-                            }
-                          />
-                        )
-                      )}
-                    </Pie>
-
-                    <Tooltip
-                      formatter={(value) =>
-                        formatCurrency(value)
-                      }
-                    />
-
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div className="panel chart-panel full-width">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">
-                  SPENDING TREND
-                </span>
-
-                <h3>
-                  {analysisMode ===
-                  "yearly"
-                    ? `${selectedYear} Spending Trend`
-                    : `${months[selectedMonth]} Spending Trend`}
-                </h3>
-
-                <p>
-                  Cumulative expense growth
-                </p>
-              </div>
-            </div>
-
-            <div className="large-chart">
-              {trendData.length ===
-              0 ? (
-                <div className="empty-state">
-                  <strong>
-                    No spending data
-                  </strong>
-
-                  <span>
-                    Add expenses to see
-                    your trend.
-                  </span>
-                </div>
-              ) : (
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
-                  <LineChart
-                    data={trendData}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                    />
-
-                    <XAxis
-                      dataKey="date"
-                      axisLine={false}
-                      tickLine={false}
-                    />
-
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                    />
-
-                    <Tooltip
-                      formatter={(value) =>
-                        formatCurrency(value)
-                      }
-                    />
-
-                    <Legend />
-
-                    <Line
-                      type="monotone"
-                      dataKey="spending"
-                      name="Cumulative Spending"
-                      stroke="#6366f1"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 7 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          {analysisMode === "yearly" && (
-            <div className="panel chart-panel full-width">
-              <div className="panel-header">
-                <div>
-                  <span className="panel-label">
-                    YEARLY BREAKDOWN
-                  </span>
-
-                  <h3>
-                    Monthly Expense
-                    Breakdown
-                  </h3>
-
-                  <p>
-                    Your spending across{" "}
-                    {selectedYear}
-                  </p>
-                </div>
-              </div>
-
-              <div className="large-chart">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
-                  <BarChart
-                    data={
-                      yearlyAnalysis.monthlyExpenses
-                    }
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                    />
-
-                    <XAxis
-                      dataKey="shortMonth"
-                      axisLine={false}
-                      tickLine={false}
-                    />
-
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                    />
-
-                    <Tooltip
-                      formatter={(value) =>
-                        formatCurrency(value)
-                      }
-                    />
-
-                    <Bar
-                      dataKey="value"
-                      name="Expenses"
-                      fill="#6366f1"
-                      radius={[
-                        8,
-                        8,
-                        0,
-                        0,
-                      ]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
         </div>
-      </>
-    );
-  };
+      </div>
+    </>
+  );
 
   /* =======================================================
-     TRANSACTION MODAL
+     MODAL
   ======================================================= */
 
   const TransactionModal = () => {
@@ -2166,12 +1403,13 @@ function App() {
               </h2>
 
               <p>
-                Enter your transaction
-                details below.
+                Enter your transaction details
+                below.
               </p>
             </div>
 
             <button
+              type="button"
               className="close-button"
               onClick={closeModal}
             >
@@ -2179,14 +1417,19 @@ function App() {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form
+            className="transaction-form"
+            onSubmit={handleSubmit}
+          >
             <div className="form-group">
-              <label>
+              <label htmlFor="transaction-title">
                 Transaction Name
               </label>
 
               <input
+                id="transaction-title"
                 name="title"
+                type="text"
                 value={form.title}
                 onChange={handleChange}
                 placeholder="e.g. Grocery shopping"
@@ -2196,31 +1439,37 @@ function App() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Amount</label>
+                <label htmlFor="transaction-amount">
+                  Amount
+                </label>
 
                 <div className="currency-input">
                   <span>₹</span>
 
                   <input
-                    type="number"
+                    id="transaction-amount"
                     name="amount"
+                    type="number"
+                    inputMode="decimal"
+                    min="0.01"
+                    step="0.01"
                     value={form.amount}
                     onChange={handleChange}
                     placeholder="0"
-                    min="1"
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Type</label>
+                <label htmlFor="transaction-type">
+                  Type
+                </label>
 
                 <select
+                  id="transaction-type"
                   name="type"
                   value={form.type}
-                  onChange={
-                    handleTypeChange
-                  }
+                  onChange={handleTypeChange}
                 >
                   <option value="expense">
                     Expense
@@ -2235,45 +1484,45 @@ function App() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>
+                <label htmlFor="transaction-category">
                   Category
                 </label>
 
                 <select
+                  id="transaction-category"
                   name="category"
                   value={form.category}
                   onChange={handleChange}
                   disabled={
-                    form.type ===
-                    "income"
+                    form.type === "income"
                   }
                 >
-                  {form.type ===
-                    "income" && (
+                  {form.type === "income" ? (
                     <option value="Income">
                       Income
                     </option>
-                  )}
-
-                  {categories.map(
-                    (category) => (
+                  ) : (
+                    categories.map((category) => (
                       <option
                         key={category}
                         value={category}
                       >
                         {category}
                       </option>
-                    )
+                    ))
                   )}
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Date</label>
+                <label htmlFor="transaction-date">
+                  Date
+                </label>
 
                 <input
-                  type="date"
+                  id="transaction-date"
                   name="date"
+                  type="date"
                   value={form.date}
                   onChange={handleChange}
                 />
@@ -2305,7 +1554,7 @@ function App() {
   };
 
   /* =======================================================
-     MAIN LAYOUT
+     APP LAYOUT
   ======================================================= */
 
   return (
@@ -2317,9 +1566,7 @@ function App() {
           </div>
 
           <div className="brand-text">
-            <strong>
-              SpendWise
-            </strong>
+            <strong>SpendWise</strong>
 
             <span>
               Expense Manager
@@ -2329,16 +1576,14 @@ function App() {
 
         <nav className="navigation">
           <button
+            type="button"
             className={
-              activePage ===
-              "dashboard"
+              activePage === "dashboard"
                 ? "nav-item active"
                 : "nav-item"
             }
             onClick={() =>
-              setActivePage(
-                "dashboard"
-              )
+              setActivePage("dashboard")
             }
           >
             <Icons.Dashboard />
@@ -2346,16 +1591,14 @@ function App() {
           </button>
 
           <button
+            type="button"
             className={
-              activePage ===
-              "transactions"
+              activePage === "transactions"
                 ? "nav-item active"
                 : "nav-item"
             }
             onClick={() =>
-              setActivePage(
-                "transactions"
-              )
+              setActivePage("transactions")
             }
           >
             <Icons.Transactions />
@@ -2363,20 +1606,34 @@ function App() {
           </button>
 
           <button
+            type="button"
             className={
-              activePage ===
-              "analytics"
+              activePage === "analytics"
                 ? "nav-item active"
                 : "nav-item"
             }
             onClick={() =>
-              setActivePage(
-                "analytics"
-              )
+              setActivePage("analytics")
             }
           >
             <Icons.Analytics />
             <span>Analytics</span>
+          </button>
+
+          <button
+            type="button"
+            className={
+              activePage === "ai"
+                ? "nav-item active ai-nav-item"
+                : "nav-item ai-nav-item"
+            }
+            onClick={() =>
+              setActivePage("ai")
+            }
+          >
+            <Icons.AI />
+            <span>AI Insights</span>
+            <small>NEW</small>
           </button>
         </nav>
 
@@ -2384,10 +1641,7 @@ function App() {
 
         <div className="sidebar-budget">
           <div className="sidebar-budget-top">
-            <span>
-              Monthly Budget
-            </span>
-
+            <span>Monthly Budget</span>
             <Icons.Wallet />
           </div>
 
@@ -2404,8 +1658,7 @@ function App() {
           </div>
 
           <small>
-            {formatCurrency(expenses)}{" "}
-            spent
+            {formatCurrency(expenses)} spent
           </small>
         </div>
 
@@ -2416,19 +1669,23 @@ function App() {
       </aside>
 
       <main className="main-content">
-        {activePage ===
-          "dashboard" && (
+        {activePage === "dashboard" && (
           <Dashboard />
         )}
 
-        {activePage ===
-          "transactions" && (
+        {activePage === "transactions" && (
           <TransactionsPage />
         )}
 
-        {activePage ===
-          "analytics" && (
+        {activePage === "analytics" && (
           <AnalyticsPage />
+        )}
+
+        {activePage === "ai" && (
+          <AIInsights
+            transactions={transactions}
+            budget={budget}
+          />
         )}
       </main>
 
