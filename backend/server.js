@@ -11,8 +11,18 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
+
 const JWT_SECRET =
-  process.env.JWT_SECRET || "smart_expense_tracker_secret";
+  process.env.JWT_SECRET ||
+  "smart_expense_tracker_secret";
+
+const AI_SERVICE_URL =
+  process.env.AI_SERVICE_URL ||
+  "http://localhost:8000";
+
+/* =========================================================
+   MIDDLEWARE
+========================================================= */
 
 app.use(
   cors({
@@ -151,19 +161,28 @@ budgetSchema.index(
   }
 );
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model(
+  "User",
+  userSchema
+);
+
 const Transaction = mongoose.model(
   "Transaction",
   transactionSchema
 );
-const Budget = mongoose.model("Budget", budgetSchema);
+
+const Budget = mongoose.model(
+  "Budget",
+  budgetSchema
+);
 
 /* =========================================================
    AUTHENTICATION MIDDLEWARE
 ========================================================= */
 
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers.authorization;
+  const authHeader =
+    req.headers.authorization;
 
   if (!authHeader) {
     return res.status(401).json({
@@ -171,7 +190,8 @@ function authenticateToken(req, res, next) {
     });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token =
+    authHeader.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({
@@ -180,7 +200,10 @@ function authenticateToken(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(
+      token,
+      JWT_SECRET
+    );
 
     req.user = decoded;
 
@@ -198,7 +221,8 @@ function authenticateToken(req, res, next) {
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Smart Expense Tracker API is running",
+    message:
+      "Smart Expense Tracker API is running",
   });
 });
 
@@ -206,142 +230,185 @@ app.get("/", (req, res) => {
    REGISTER
 ========================================================= */
 
-app.post("/api/auth/register", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+app.post(
+  "/api/auth/register",
+  async (req, res) => {
+    try {
+      const {
+        name,
+        email,
+        password,
+      } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({
-        message: "Password must contain at least 6 characters",
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
-    const existingUser = await User.findOne({
-      email: normalizedEmail,
-    });
-
-    if (existingUser) {
-      return res.status(409).json({
-        message: "An account with this email already exists",
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      password: hashedPassword,
-    });
-
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        email: user.email,
-        name: user.name,
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "7d",
+      if (
+        !name ||
+        !email ||
+        !password
+      ) {
+        return res.status(400).json({
+          message:
+            "All fields are required",
+        });
       }
-    );
 
-    res.status(201).json({
-      message: "Account created successfully",
+      if (password.length < 6) {
+        return res.status(400).json({
+          message:
+            "Password must contain at least 6 characters",
+        });
+      }
 
-      token,
+      const normalizedEmail =
+        email.toLowerCase().trim();
 
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.error("Register error:", error);
+      const existingUser =
+        await User.findOne({
+          email: normalizedEmail,
+        });
 
-    res.status(500).json({
-      message: "Server error while creating account",
-    });
+      if (existingUser) {
+        return res.status(409).json({
+          message:
+            "An account with this email already exists",
+        });
+      }
+
+      const hashedPassword =
+        await bcrypt.hash(
+          password,
+          10
+        );
+
+      const user =
+        await User.create({
+          name: name.trim(),
+          email: normalizedEmail,
+          password: hashedPassword,
+        });
+
+      const token = jwt.sign(
+        {
+          userId: user._id,
+          email: user.email,
+          name: user.name,
+        },
+        JWT_SECRET,
+        {
+          expiresIn: "7d",
+        }
+      );
+
+      res.status(201).json({
+        message:
+          "Account created successfully",
+
+        token,
+
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Register error:",
+        error
+      );
+
+      res.status(500).json({
+        message:
+          "Server error while creating account",
+      });
+    }
   }
-});
+);
 
 /* =========================================================
    LOGIN
 ========================================================= */
 
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+app.post(
+  "/api/auth/login",
+  async (req, res) => {
+    try {
+      const {
+        email,
+        password,
+      } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password are required",
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
-    const user = await User.findOne({
-      email: normalizedEmail,
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
-    }
-
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
-    }
-
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        email: user.email,
-        name: user.name,
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "7d",
+      if (!email || !password) {
+        return res.status(400).json({
+          message:
+            "Email and password are required",
+        });
       }
-    );
 
-    res.json({
-      message: "Login successful",
+      const normalizedEmail =
+        email.toLowerCase().trim();
 
-      token,
+      const user =
+        await User.findOne({
+          email: normalizedEmail,
+        });
 
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
+      if (!user) {
+        return res.status(401).json({
+          message:
+            "Invalid email or password",
+        });
+      }
 
-    res.status(500).json({
-      message: "Server error while logging in",
-    });
+      const passwordMatch =
+        await bcrypt.compare(
+          password,
+          user.password
+        );
+
+      if (!passwordMatch) {
+        return res.status(401).json({
+          message:
+            "Invalid email or password",
+        });
+      }
+
+      const token = jwt.sign(
+        {
+          userId: user._id,
+          email: user.email,
+          name: user.name,
+        },
+        JWT_SECRET,
+        {
+          expiresIn: "7d",
+        }
+      );
+
+      res.json({
+        message:
+          "Login successful",
+
+        token,
+
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error
+      );
+
+      res.status(500).json({
+        message:
+          "Server error while logging in",
+      });
+    }
   }
-});
+);
 
 /* =========================================================
    CURRENT USER
@@ -352,9 +419,10 @@ app.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const user = await User.findById(
-        req.user.userId
-      ).select("-password");
+      const user =
+        await User.findById(
+          req.user.userId
+        ).select("-password");
 
       if (!user) {
         return res.status(404).json({
@@ -370,10 +438,14 @@ app.get(
         },
       });
     } catch (error) {
-      console.error("Get user error:", error);
+      console.error(
+        "Get user error:",
+        error
+      );
 
       res.status(500).json({
-        message: "Unable to fetch user",
+        message:
+          "Unable to fetch user",
       });
     }
   }
@@ -388,19 +460,24 @@ app.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const transactions = await Transaction.find({
-        userId: req.user.userId,
-      }).sort({
-        date: -1,
-        createdAt: -1,
-      });
+      const transactions =
+        await Transaction.find({
+          userId: req.user.userId,
+        }).sort({
+          date: -1,
+          createdAt: -1,
+        });
 
       res.json(transactions);
     } catch (error) {
-      console.error("Get transactions error:", error);
+      console.error(
+        "Get transactions error:",
+        error
+      );
 
       res.status(500).json({
-        message: "Unable to fetch transactions",
+        message:
+          "Unable to fetch transactions",
       });
     }
   }
@@ -437,33 +514,44 @@ app.post(
         });
       }
 
-      const numericAmount = Number(amount);
+      const numericAmount =
+        Number(amount);
 
       if (
         Number.isNaN(numericAmount) ||
         numericAmount <= 0
       ) {
         return res.status(400).json({
-          message: "Amount must be greater than zero",
+          message:
+            "Amount must be greater than zero",
         });
       }
 
-      const transaction = await Transaction.create({
-        userId: req.user.userId,
-        title: title.trim(),
-        amount: numericAmount,
-        type,
-        category: category.trim(),
-        date: new Date(date),
-        note: note ? note.trim() : "",
-      });
+      const transaction =
+        await Transaction.create({
+          userId: req.user.userId,
+          title: title.trim(),
+          amount: numericAmount,
+          type,
+          category: category.trim(),
+          date: new Date(date),
+          note: note
+            ? note.trim()
+            : "",
+        });
 
-      res.status(201).json(transaction);
+      res.status(201).json(
+        transaction
+      );
     } catch (error) {
-      console.error("Add transaction error:", error);
+      console.error(
+        "Add transaction error:",
+        error
+      );
 
       res.status(500).json({
-        message: "Unable to add transaction",
+        message:
+          "Unable to add transaction",
       });
     }
   }
@@ -486,7 +574,8 @@ app.put(
 
       if (!transaction) {
         return res.status(404).json({
-          message: "Transaction not found",
+          message:
+            "Transaction not found",
         });
       }
 
@@ -507,27 +596,40 @@ app.put(
         !date
       ) {
         return res.status(400).json({
-          message: "Please fill all required fields",
+          message:
+            "Please fill all required fields",
         });
       }
 
-      const numericAmount = Number(amount);
+      const numericAmount =
+        Number(amount);
 
       if (
         Number.isNaN(numericAmount) ||
         numericAmount <= 0
       ) {
         return res.status(400).json({
-          message: "Amount must be greater than zero",
+          message:
+            "Amount must be greater than zero",
         });
       }
 
-      transaction.title = title.trim();
-      transaction.amount = numericAmount;
+      transaction.title =
+        title.trim();
+
+      transaction.amount =
+        numericAmount;
+
       transaction.type = type;
-      transaction.category = category.trim();
-      transaction.date = new Date(date);
-      transaction.note = note ? note.trim() : "";
+
+      transaction.category =
+        category.trim();
+
+      transaction.date =
+        new Date(date);
+
+      transaction.note =
+        note ? note.trim() : "";
 
       await transaction.save();
 
@@ -539,7 +641,8 @@ app.put(
       );
 
       res.status(500).json({
-        message: "Unable to update transaction",
+        message:
+          "Unable to update transaction",
       });
     }
   }
@@ -562,12 +665,14 @@ app.delete(
 
       if (!transaction) {
         return res.status(404).json({
-          message: "Transaction not found",
+          message:
+            "Transaction not found",
         });
       }
 
       res.json({
-        message: "Transaction deleted successfully",
+        message:
+          "Transaction deleted successfully",
       });
     } catch (error) {
       console.error(
@@ -576,7 +681,108 @@ app.delete(
       );
 
       res.status(500).json({
-        message: "Unable to delete transaction",
+        message:
+          "Unable to delete transaction",
+      });
+    }
+  }
+);
+
+/* =========================================================
+   STEP 3 — SEND USER TRANSACTIONS TO AI SERVICE
+========================================================= */
+
+app.post(
+  "/api/ai/process-transactions",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const transactions =
+        await Transaction.find({
+          userId: req.user.userId,
+        }).sort({
+          date: -1,
+          createdAt: -1,
+        });
+
+      const aiTransactions =
+        transactions.map(
+          (transaction) => ({
+            id: transaction._id.toString(),
+
+            title: transaction.title,
+
+            amount: Number(
+              transaction.amount
+            ),
+
+            type: transaction.type,
+
+            category:
+              transaction.category,
+
+            date:
+              transaction.date
+                .toISOString()
+                .split("T")[0],
+
+            note:
+              transaction.note || "",
+          })
+        );
+
+      const aiResponse =
+        await fetch(
+          `${AI_SERVICE_URL}/process-transactions`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              transactions:
+                aiTransactions,
+            }),
+          }
+        );
+
+      const aiData =
+        await aiResponse.json();
+
+      if (!aiResponse.ok) {
+        console.error(
+          "AI service error:",
+          aiData
+        );
+
+        return res.status(502).json({
+          message:
+            "AI service could not process transactions",
+        });
+      }
+
+      res.json({
+        success: true,
+
+        message:
+          "Transactions successfully connected to AI",
+
+        data: aiData,
+      });
+    } catch (error) {
+      console.error(
+        "AI transaction connection error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to connect transactions to AI service",
       });
     }
   }
@@ -591,31 +797,44 @@ app.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const month = Number(req.query.month);
-      const year = Number(req.query.year);
+      const month =
+        Number(req.query.month);
+
+      const year =
+        Number(req.query.year);
 
       if (!month || !year) {
         return res.status(400).json({
-          message: "Month and year are required",
+          message:
+            "Month and year are required",
         });
       }
 
-      const budget = await Budget.findOne({
-        userId: req.user.userId,
-        month,
-        year,
-      });
+      const budget =
+        await Budget.findOne({
+          userId: req.user.userId,
+          month,
+          year,
+        });
 
       res.json({
-        amount: budget ? budget.amount : 0,
+        amount: budget
+          ? budget.amount
+          : 0,
+
         month,
+
         year,
       });
     } catch (error) {
-      console.error("Get budget error:", error);
+      console.error(
+        "Get budget error:",
+        error
+      );
 
       res.status(500).json({
-        message: "Unable to fetch budget",
+        message:
+          "Unable to fetch budget",
       });
     }
   }
@@ -636,9 +855,14 @@ app.put(
         amount,
       } = req.body;
 
-      const numericMonth = Number(month);
-      const numericYear = Number(year);
-      const numericAmount = Number(amount);
+      const numericMonth =
+        Number(month);
+
+      const numericYear =
+        Number(year);
+
+      const numericAmount =
+        Number(amount);
 
       if (
         !numericMonth ||
@@ -647,23 +871,38 @@ app.put(
         numericAmount < 0
       ) {
         return res.status(400).json({
-          message: "Invalid budget details",
+          message:
+            "Invalid budget details",
         });
       }
 
       const budget =
         await Budget.findOneAndUpdate(
           {
-            userId: req.user.userId,
-            month: numericMonth,
-            year: numericYear,
+            userId:
+              req.user.userId,
+
+            month:
+              numericMonth,
+
+            year:
+              numericYear,
           },
+
           {
-            userId: req.user.userId,
-            month: numericMonth,
-            year: numericYear,
-            amount: numericAmount,
+            userId:
+              req.user.userId,
+
+            month:
+              numericMonth,
+
+            year:
+              numericYear,
+
+            amount:
+              numericAmount,
           },
+
           {
             new: true,
             upsert: true,
@@ -672,14 +911,20 @@ app.put(
         );
 
       res.json({
-        message: "Monthly budget saved successfully",
+        message:
+          "Monthly budget saved successfully",
+
         budget,
       });
     } catch (error) {
-      console.error("Save budget error:", error);
+      console.error(
+        "Save budget error:",
+        error
+      );
 
       res.status(500).json({
-        message: "Unable to save budget",
+        message:
+          "Unable to save budget",
       });
     }
   }
@@ -694,8 +939,11 @@ app.delete(
   authenticateToken,
   async (req, res) => {
     try {
-      const month = Number(req.query.month);
-      const year = Number(req.query.year);
+      const month =
+        Number(req.query.month);
+
+      const year =
+        Number(req.query.year);
 
       await Budget.findOneAndDelete({
         userId: req.user.userId,
@@ -704,13 +952,18 @@ app.delete(
       });
 
       res.json({
-        message: "Budget removed successfully",
+        message:
+          "Budget removed successfully",
       });
     } catch (error) {
-      console.error("Delete budget error:", error);
+      console.error(
+        "Delete budget error:",
+        error
+      );
 
       res.status(500).json({
-        message: "Unable to remove budget",
+        message:
+          "Unable to remove budget",
       });
     }
   }
@@ -730,13 +983,21 @@ async function startServer() {
       process.exit(1);
     }
 
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(
+      MONGO_URI
+    );
 
-    console.log("✓ MongoDB connected");
+    console.log(
+      "✓ MongoDB connected"
+    );
 
     app.listen(PORT, () => {
       console.log(
         `✓ Server running on http://localhost:${PORT}`
+      );
+
+      console.log(
+        `✓ AI service configured at ${AI_SERVICE_URL}`
       );
     });
   } catch (error) {

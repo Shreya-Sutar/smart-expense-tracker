@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   LayoutDashboard,
   Receipt,
@@ -24,7 +26,16 @@ import AllInsights from "./AllInsights";
 
 import "./App.css";
 
+// =========================================================
+// API URLS
+// =========================================================
+
 const API_URL = "http://localhost:5000/api";
+const AI_API_URL = "http://localhost:8000";
+
+// =========================================================
+// MONTHS
+// =========================================================
 
 const months = [
   "January",
@@ -41,6 +52,10 @@ const months = [
   "December",
 ];
 
+// =========================================================
+// CATEGORIES
+// =========================================================
+
 const categories = [
   "Food",
   "Shopping",
@@ -53,38 +68,124 @@ const categories = [
   "Other",
 ];
 
+// =========================================================
+// HELPERS
+// =========================================================
+
+const getToday = () => {
+  const date = new Date();
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString("en-IN");
+};
+
+const getTransactionId = (transaction) => {
+  return String(transaction?._id || transaction?.id || "");
+};
+
+const formatCurrency = (value) => {
+  const amount = Number(value) || 0;
+
+  return `₹${amount.toLocaleString("en-IN")}`;
+};
+
+// =========================================================
+// APP
+// =========================================================
+
 function App() {
-  const [token, setToken] = useState(
+  // =======================================================
+  // AUTH
+  // =======================================================
+
+  const [token, setToken] = useState(() =>
     localStorage.getItem("expense_token")
   );
 
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem(
-      "expense_user"
-    );
+    const savedUser = localStorage.getItem("expense_user");
 
-    return saved ? JSON.parse(saved) : null;
+    if (!savedUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(savedUser);
+    } catch {
+      return null;
+    }
   });
 
   const [authPage, setAuthPage] = useState("login");
 
-  const [activePage, setActivePage] =
-    useState("dashboard");
+  // =======================================================
+  // NAVIGATION
+  // =======================================================
 
-  const now = new Date();
+  const [activePage, setActivePage] = useState("dashboard");
 
-  const [selectedMonth, setSelectedMonth] =
-    useState(now.getMonth());
+  const [mobileMenu, setMobileMenu] = useState(false);
 
-  const [selectedYear, setSelectedYear] =
-    useState(now.getFullYear());
+  // =======================================================
+  // DATE
+  // =======================================================
 
-  const [transactions, setTransactions] =
-    useState([]);
+  const currentDate = new Date();
+
+  const [selectedMonth, setSelectedMonth] = useState(
+    currentDate.getMonth()
+  );
+
+  const [selectedYear, setSelectedYear] = useState(
+    currentDate.getFullYear()
+  );
+
+  // =======================================================
+  // TRANSACTIONS
+  // =======================================================
+
+  const [transactions, setTransactions] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  // =======================================================
+  // BUDGET
+  // =======================================================
 
   const [budget, setBudget] = useState(0);
 
-  const [loading, setLoading] = useState(false);
+  const [budgetInput, setBudgetInput] = useState("");
+
+  const [budgetSaving, setBudgetSaving] = useState(false);
+
+  // =======================================================
+  // AI
+  // =======================================================
+
+  const [aiData, setAiData] = useState(null);
+
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const [aiError, setAiError] = useState("");
+
+  // =======================================================
+  // MODALS
+  // =======================================================
 
   const [showTransactionModal, setShowTransactionModal] =
     useState(false);
@@ -92,164 +193,229 @@ function App() {
   const [editingTransaction, setEditingTransaction] =
     useState(null);
 
-  const [showBudgetModal, setShowBudgetModal] =
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+
+  // =======================================================
+  // TRANSACTION FORM
+  // IMPORTANT:
+  // Keep amount as STRING while typing.
+  // This prevents input problems such as deleting/replacing
+  // the value while React rerenders.
+  // =======================================================
+
+  const [transactionForm, setTransactionForm] = useState({
+    title: "",
+    amount: "",
+    type: "expense",
+    category: "Food",
+    date: getToday(),
+    note: "",
+  });
+
+  const [savingTransaction, setSavingTransaction] =
     useState(false);
 
-  const [mobileMenu, setMobileMenu] =
-    useState(false);
+  // =======================================================
+  // LOGOUT
+  // =======================================================
 
-  const [transactionForm, setTransactionForm] =
-    useState({
-      title: "",
-      amount: "",
-      type: "expense",
-      category: "Food",
-      date: new Date().toISOString().split("T")[0],
-      note: "",
-    });
-
-  const [budgetInput, setBudgetInput] =
-    useState("");
-
-  /* =====================================================
-     AUTH HELPERS
-  ===================================================== */
-
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem("expense_token");
     localStorage.removeItem("expense_user");
 
     setToken(null);
     setUser(null);
-  };
+
+    setTransactions([]);
+    setAiData(null);
+    setAiError("");
+
+    setActivePage("dashboard");
+  }, []);
+
+  // =======================================================
+  // LOGIN
+  // =======================================================
 
   const handleLogin = (data) => {
-    localStorage.setItem(
-      "expense_token",
-      data.token
-    );
-
-    localStorage.setItem(
-      "expense_user",
-      JSON.stringify(data.user)
-    );
-
-    setToken(data.token);
-    setUser(data.user);
-  };
-
-  const handleRegister = (data) => {
-    localStorage.setItem(
-      "expense_token",
-      data.token
-    );
-
-    localStorage.setItem(
-      "expense_user",
-      JSON.stringify(data.user)
-    );
-
-    setToken(data.token);
-    setUser(data.user);
-  };
-
-  /* =====================================================
-     API
-  ===================================================== */
-
-  const apiFetch = async (
-    endpoint,
-    options = {}
-  ) => {
-    const response = await fetch(
-      `${API_URL}${endpoint}`,
-      {
-        ...options,
-
-        headers: {
-          "Content-Type": "application/json",
-
-          ...(token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : {}),
-
-          ...(options.headers || {}),
-        },
-      }
-    );
-
-    const data = await response
-      .json()
-      .catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Something went wrong"
-      );
+    if (!data?.token || !data?.user) {
+      alert("Invalid login response from server.");
+      return;
     }
 
-    return data;
+    localStorage.setItem("expense_token", data.token);
+    localStorage.setItem(
+      "expense_user",
+      JSON.stringify(data.user)
+    );
+
+    setToken(data.token);
+    setUser(data.user);
   };
 
-  /* =====================================================
-     FETCH TRANSACTIONS
-  ===================================================== */
+  // =======================================================
+  // REGISTER
+  // =======================================================
 
-  const fetchTransactions = async () => {
+  const handleRegister = (data) => {
+    if (!data?.token || !data?.user) {
+      alert("Invalid registration response from server.");
+      return;
+    }
+
+    localStorage.setItem("expense_token", data.token);
+    localStorage.setItem(
+      "expense_user",
+      JSON.stringify(data.user)
+    );
+
+    setToken(data.token);
+    setUser(data.user);
+  };
+
+  // =======================================================
+  // API FETCH
+  // =======================================================
+
+  const apiFetch = useCallback(
+    async (endpoint, options = {}) => {
+      if (!token) {
+        throw new Error("You are not logged in.");
+      }
+
+      const response = await fetch(
+        `${API_URL}${endpoint}`,
+        {
+          ...options,
+
+          headers: {
+            ...(options.body
+              ? {
+                  "Content-Type": "application/json",
+                }
+              : {}),
+
+            Authorization: `Bearer ${token}`,
+
+            ...(options.headers || {}),
+          },
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => ({}));
+
+      if (!response.ok) {
+        const errorMessage =
+          data?.message ||
+          data?.error ||
+          data?.detail ||
+          "Something went wrong.";
+
+        throw new Error(errorMessage);
+      }
+
+      return data;
+    },
+    [token]
+  );
+
+  // =======================================================
+  // FETCH TRANSACTIONS
+  // =======================================================
+
+  const fetchTransactions = useCallback(async () => {
     if (!token) return;
 
     try {
       setLoading(true);
 
-      const data = await apiFetch(
-        "/transactions"
+      const data = await apiFetch("/transactions");
+
+      let transactionList = [];
+
+      if (Array.isArray(data)) {
+        transactionList = data;
+      } else if (Array.isArray(data?.transactions)) {
+        transactionList = data.transactions;
+      } else if (Array.isArray(data?.data)) {
+        transactionList = data.data;
+      }
+
+      setTransactions(transactionList);
+    } catch (error) {
+      console.error(
+        "Transaction fetch error:",
+        error
       );
 
-      setTransactions(data);
-    } catch (error) {
-      console.error(error);
+      const message =
+        error?.message?.toLowerCase() || "";
 
       if (
-        error.message.includes("token") ||
-        error.message.includes("Authentication")
+        message.includes("token") ||
+        message.includes("authentication") ||
+        message.includes("unauthorized") ||
+        message.includes("jwt") ||
+        message.includes("expired")
       ) {
         logout();
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiFetch, logout, token]);
 
-  /* =====================================================
-     FETCH BUDGET
-  ===================================================== */
+  // =======================================================
+  // FETCH BUDGET
+  // =======================================================
 
-  const fetchBudget = async () => {
+  const fetchBudget = useCallback(async () => {
     if (!token) return;
 
     try {
       const data = await apiFetch(
-        `/budget?month=${
-          selectedMonth + 1
-        }&year=${selectedYear}`
+        `/budget?month=${selectedMonth + 1}&year=${selectedYear}`
       );
 
-      setBudget(Number(data.amount || 0));
+      const amount = Number(data?.amount || 0);
+
+      setBudget(amount);
+
       setBudgetInput(
-        data.amount ? String(data.amount) : ""
+        amount > 0 ? String(amount) : ""
       );
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Budget fetch error:",
+        error
+      );
+
+      // If no budget exists, keep budget at zero.
+      setBudget(0);
+      setBudgetInput("");
     }
-  };
+  }, [
+    apiFetch,
+    selectedMonth,
+    selectedYear,
+    token,
+  ]);
+
+  // =======================================================
+  // INITIAL TRANSACTION FETCH
+  // =======================================================
 
   useEffect(() => {
     if (token) {
       fetchTransactions();
     }
-  }, [token]);
+  }, [token, fetchTransactions]);
+
+  // =======================================================
+  // BUDGET FETCH WHEN MONTH/YEAR CHANGES
+  // =======================================================
 
   useEffect(() => {
     if (token) {
@@ -259,30 +425,161 @@ function App() {
     token,
     selectedMonth,
     selectedYear,
+    fetchBudget,
   ]);
 
-  /* =====================================================
-     SELECTED MONTH TRANSACTIONS
-  ===================================================== */
+  // =======================================================
+  // CONNECT TRANSACTIONS TO AI
+  // =======================================================
+
+  const connectTransactionsToAI = useCallback(
+    async () => {
+      if (!token || transactions.length === 0) {
+        setAiData(null);
+        setAiError("");
+        return;
+      }
+
+      try {
+        setAiLoading(true);
+        setAiError("");
+
+        const formattedTransactions =
+          transactions.map((transaction) => ({
+            id: getTransactionId(transaction),
+
+            title: String(
+              transaction?.title || ""
+            ),
+
+            amount: Number(
+              transaction?.amount || 0
+            ),
+
+            type: String(
+              transaction?.type || "expense"
+            ),
+
+            category: String(
+              transaction?.category || "Other"
+            ),
+
+            date: transaction?.date
+              ? new Date(transaction.date)
+                  .toISOString()
+                  .split("T")[0]
+              : getToday(),
+
+            note: String(
+              transaction?.note || ""
+            ),
+          }));
+
+        const response = await fetch(
+          `${AI_API_URL}/process-transactions`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              transactions:
+                formattedTransactions,
+            }),
+          }
+        );
+
+        const data = await response
+          .json()
+          .catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            data?.detail ||
+              data?.message ||
+              "AI service request failed."
+          );
+        }
+
+        setAiData(data);
+
+        console.log(
+          "AI transaction data:",
+          data
+        );
+      } catch (error) {
+        console.error(
+          "AI connection error:",
+          error
+        );
+
+        setAiError(
+          error?.message ||
+            "Unable to connect to AI service."
+        );
+      } finally {
+        setAiLoading(false);
+      }
+    },
+    [token, transactions]
+  );
+
+  // =======================================================
+  // RUN AI WHEN TRANSACTIONS CHANGE
+  // =======================================================
+
+  useEffect(() => {
+    if (
+      token &&
+      transactions.length > 0
+    ) {
+      connectTransactionsToAI();
+    } else {
+      setAiData(null);
+      setAiError("");
+    }
+  }, [
+    token,
+    transactions,
+    connectTransactionsToAI,
+  ]);
+
+  // =======================================================
+  // SELECTED MONTH TRANSACTIONS
+  // =======================================================
 
   const selectedTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const date = new Date(transaction.date);
+    return transactions.filter(
+      (transaction) => {
+        if (!transaction?.date) {
+          return false;
+        }
 
-      return (
-        date.getMonth() === selectedMonth &&
-        date.getFullYear() === selectedYear
-      );
-    });
+        const date = new Date(
+          transaction.date
+        );
+
+        if (Number.isNaN(date.getTime())) {
+          return false;
+        }
+
+        return (
+          date.getMonth() === selectedMonth &&
+          date.getFullYear() === selectedYear
+        );
+      }
+    );
   }, [
     transactions,
     selectedMonth,
     selectedYear,
   ]);
 
-  /* =====================================================
-     DASHBOARD TOTALS
-  ===================================================== */
+  // =======================================================
+  // TOTALS
+  // =======================================================
 
   const totals = useMemo(() => {
     let income = 0;
@@ -291,10 +588,12 @@ function App() {
     selectedTransactions.forEach(
       (transaction) => {
         const amount = Number(
-          transaction.amount
+          transaction?.amount || 0
         );
 
-        if (transaction.type === "income") {
+        if (
+          transaction?.type === "income"
+        ) {
           income += amount;
         } else {
           expense += amount;
@@ -309,19 +608,24 @@ function App() {
     };
   }, [selectedTransactions]);
 
-  const remainingBudget = budget - totals.expense;
+  // =======================================================
+  // BUDGET CALCULATIONS
+  // =======================================================
+
+  const remainingBudget =
+    budget - totals.expense;
 
   const budgetPercentage =
-  budget > 0
-    ? Math.min(
-        (totals.expense / budget) * 100,
-        100
-      )
-    : 0;
+    budget > 0
+      ? Math.min(
+          (totals.expense / budget) * 100,
+          100
+        )
+      : 0;
 
-  /* =====================================================
-     FORM
-  ===================================================== */
+  // =======================================================
+  // OPEN ADD TRANSACTION
+  // =======================================================
 
   const openAddTransaction = () => {
     setEditingTransaction(null);
@@ -331,12 +635,16 @@ function App() {
       amount: "",
       type: "expense",
       category: "Food",
-      date: new Date().toISOString().split("T")[0],
+      date: getToday(),
       note: "",
     });
 
     setShowTransactionModal(true);
   };
+
+  // =======================================================
+  // OPEN EDIT TRANSACTION
+  // =======================================================
 
   const openEditTransaction = (
     transaction
@@ -344,23 +652,57 @@ function App() {
     setEditingTransaction(transaction);
 
     setTransactionForm({
-      title: transaction.title,
-      amount: transaction.amount,
-      type: transaction.type,
-      category: transaction.category,
-      date: new Date(transaction.date)
-        .toISOString()
-        .split("T")[0],
-      note: transaction.note || "",
+      title: String(
+        transaction?.title || ""
+      ),
+
+      amount:
+        transaction?.amount !== undefined &&
+        transaction?.amount !== null
+          ? String(transaction.amount)
+          : "",
+
+      type:
+        transaction?.type === "income"
+          ? "income"
+          : "expense",
+
+      category:
+        transaction?.category &&
+        categories.includes(
+          transaction.category
+        )
+          ? transaction.category
+          : "Other",
+
+      date: transaction?.date
+        ? new Date(transaction.date)
+            .toISOString()
+            .split("T")[0]
+        : getToday(),
+
+      note: String(
+        transaction?.note || ""
+      ),
     });
 
     setShowTransactionModal(true);
   };
 
+  // =======================================================
+  // CLOSE TRANSACTION MODAL
+  // =======================================================
+
   const closeTransactionModal = () => {
+    if (savingTransaction) return;
+
     setShowTransactionModal(false);
     setEditingTransaction(null);
   };
+
+  // =======================================================
+  // FORM CHANGE
+  // =======================================================
 
   const handleFormChange = (event) => {
     const {
@@ -368,78 +710,183 @@ function App() {
       value,
     } = event.target;
 
-    setTransactionForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    setTransactionForm(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    );
   };
 
-  /* =====================================================
-     ADD / UPDATE TRANSACTION
-  ===================================================== */
+  // =======================================================
+  // ADD / UPDATE TRANSACTION
+  // =======================================================
 
-  const handleTransactionSubmit = async (
-    event
-  ) => {
-    event.preventDefault();
+  const handleTransactionSubmit =
+    async (event) => {
+      event.preventDefault();
 
-    if (
-      !transactionForm.title.trim() ||
-      !transactionForm.amount ||
-      Number(transactionForm.amount) <= 0 ||
-      !transactionForm.date
-    ) {
-      alert(
-        "Please enter a valid title, amount and date."
-      );
+      if (savingTransaction) {
+        return;
+      }
 
+      const title =
+        transactionForm.title.trim();
+
+      const amountText =
+        String(
+          transactionForm.amount
+        ).trim();
+
+      const amount =
+        Number(amountText);
+
+      // -----------------------------------------------
+      // VALIDATION
+      // -----------------------------------------------
+
+      if (!title) {
+        alert("Please enter a transaction title.");
+        return;
+      }
+
+      if (
+        !amountText ||
+        !Number.isFinite(amount) ||
+        amount <= 0
+      ) {
+        alert(
+          "Please enter a valid amount greater than 0."
+        );
+        return;
+      }
+
+      if (!transactionForm.date) {
+        alert("Please select a date.");
+        return;
+      }
+
+      if (
+        !["income", "expense"].includes(
+          transactionForm.type
+        )
+      ) {
+        alert("Please select a valid transaction type.");
+        return;
+      }
+
+      // -----------------------------------------------
+      // PAYLOAD
+      // -----------------------------------------------
+
+      const payload = {
+        title,
+
+        amount,
+
+        type: transactionForm.type,
+
+        category:
+          transactionForm.category || "Other",
+
+        date: transactionForm.date,
+
+        note:
+          transactionForm.note.trim(),
+      };
+
+      try {
+        setSavingTransaction(true);
+
+        // ---------------------------------------------
+        // UPDATE
+        // ---------------------------------------------
+
+        if (editingTransaction) {
+          const id =
+            getTransactionId(
+              editingTransaction
+            );
+
+          if (!id) {
+            throw new Error(
+              "Transaction ID is missing."
+            );
+          }
+
+          await apiFetch(
+            `/transactions/${id}`,
+            {
+              method: "PUT",
+              body: JSON.stringify(payload),
+            }
+          );
+        }
+
+        // ---------------------------------------------
+        // ADD
+        // ---------------------------------------------
+
+        else {
+          await apiFetch(
+            "/transactions",
+            {
+              method: "POST",
+              body: JSON.stringify(payload),
+            }
+          );
+        }
+
+        // ---------------------------------------------
+        // REFRESH
+        // ---------------------------------------------
+
+        await fetchTransactions();
+
+        setShowTransactionModal(false);
+        setEditingTransaction(null);
+
+        setTransactionForm({
+          title: "",
+          amount: "",
+          type: "expense",
+          category: "Food",
+          date: getToday(),
+          note: "",
+        });
+      } catch (error) {
+        console.error(
+          "Save transaction error:",
+          error
+        );
+
+        alert(
+          error?.message ||
+            "Unable to save transaction."
+        );
+      } finally {
+        setSavingTransaction(false);
+      }
+    };
+
+  // =======================================================
+  // DELETE TRANSACTION
+  // =======================================================
+
+  const handleDelete = async (id) => {
+    if (!id) {
+      alert("Transaction ID is missing.");
       return;
     }
 
-    try {
-      const payload = {
-        ...transactionForm,
-        amount: Number(
-          transactionForm.amount
-        ),
-      };
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this transaction?"
+      );
 
-      if (editingTransaction) {
-        await apiFetch(
-          `/transactions/${editingTransaction._id}`,
-          {
-            method: "PUT",
-            body: JSON.stringify(payload),
-          }
-        );
-      } else {
-        await apiFetch(
-          "/transactions",
-          {
-            method: "POST",
-            body: JSON.stringify(payload),
-          }
-        );
-      }
-
-      await fetchTransactions();
-
-      closeTransactionModal();
-    } catch (error) {
-      alert(error.message);
+    if (!confirmed) {
+      return;
     }
-  };
-
-  /* =====================================================
-     DELETE
-  ===================================================== */
-
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this transaction?"
-    );
-
-    if (!confirmed) return;
 
     try {
       await apiFetch(
@@ -451,63 +898,113 @@ function App() {
 
       await fetchTransactions();
     } catch (error) {
-      alert(error.message);
+      console.error(
+        "Delete transaction error:",
+        error
+      );
+
+      alert(
+        error?.message ||
+          "Unable to delete transaction."
+      );
     }
   };
 
-  /* =====================================================
-     BUDGET
-  ===================================================== */
+  // =======================================================
+  // SAVE BUDGET
+  // =======================================================
 
   const saveBudget = async (event) => {
     event.preventDefault();
 
-    const amount = Number(budgetInput);
+    if (budgetSaving) {
+      return;
+    }
 
-    if (Number.isNaN(amount) || amount < 0) {
+    const amountText =
+      String(
+        budgetInput
+      ).trim();
+
+    const amount =
+      Number(amountText);
+
+    if (
+      !amountText ||
+      !Number.isFinite(amount) ||
+      amount < 0
+    ) {
       alert(
         "Please enter a valid budget amount."
       );
-
       return;
     }
 
     try {
-      await apiFetch("/budget", {
-        method: "PUT",
+      setBudgetSaving(true);
 
-        body: JSON.stringify({
-          month: selectedMonth + 1,
-          year: selectedYear,
-          amount,
-        }),
-      });
+      await apiFetch(
+        "/budget",
+        {
+          method: "PUT",
+
+          body: JSON.stringify({
+            month:
+              selectedMonth + 1,
+
+            year:
+              selectedYear,
+
+            amount,
+          }),
+        }
+      );
 
       setBudget(amount);
 
+      setBudgetInput(
+        amount > 0
+          ? String(amount)
+          : ""
+      );
+
       setShowBudgetModal(false);
     } catch (error) {
-      alert(error.message);
+      console.error(
+        "Save budget error:",
+        error
+      );
+
+      alert(
+        error?.message ||
+          "Unable to save budget."
+      );
+    } finally {
+      setBudgetSaving(false);
     }
   };
 
-  /* =====================================================
-     YEAR OPTIONS
-  ===================================================== */
+  // =======================================================
+  // YEAR OPTIONS
+  // =======================================================
 
   const years = [];
 
   for (
-    let year = now.getFullYear() - 4;
-    year <= now.getFullYear() + 2;
+    let year =
+      currentDate.getFullYear() - 4;
+
+    year <=
+      currentDate.getFullYear() + 2;
+
     year++
   ) {
     years.push(year);
   }
 
-  /* =====================================================
-     AUTH SCREEN
-  ===================================================== */
+  // =======================================================
+  // AUTH SCREEN
+  // =======================================================
 
   if (!token || !user) {
     if (authPage === "register") {
@@ -531,9 +1028,9 @@ function App() {
     );
   }
 
-  /* =====================================================
-     NAVIGATION
-  ===================================================== */
+  // =======================================================
+  // NAVIGATION
+  // =======================================================
 
   const navigation = [
     {
@@ -562,14 +1059,22 @@ function App() {
       ? "Transactions"
       : "Insights";
 
+  // =======================================================
+  // UI
+  // =======================================================
+
   return (
     <div className="app-shell">
 
-      {/* SIDEBAR */}
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
 
       <aside
         className={`sidebar ${
-          mobileMenu ? "sidebar-open" : ""
+          mobileMenu
+            ? "sidebar-open"
+            : ""
         }`}
       >
         <div className="brand">
@@ -579,7 +1084,10 @@ function App() {
 
           <div>
             <h1>SpendWise</h1>
-            <span>Smart Expense Manager</span>
+
+            <span>
+              Smart Expense Manager
+            </span>
           </div>
         </div>
 
@@ -590,6 +1098,7 @@ function App() {
             return (
               <button
                 key={item.id}
+                type="button"
                 className={`nav-item ${
                   activePage === item.id
                     ? "active"
@@ -601,7 +1110,10 @@ function App() {
                 }}
               >
                 <Icon size={19} />
-                <span>{item.label}</span>
+
+                <span>
+                  {item.label}
+                </span>
               </button>
             );
           })}
@@ -610,38 +1122,53 @@ function App() {
         <div className="sidebar-bottom">
           <div className="user-card">
             <div className="avatar">
-              {user.name
+              {user?.name
                 ?.charAt(0)
-                ?.toUpperCase()}
+                ?.toUpperCase() || "U"}
             </div>
 
             <div className="user-info">
-              <strong>{user.name}</strong>
-              <span>{user.email}</span>
+              <strong>
+                {user?.name || "User"}
+              </strong>
+
+              <span>
+                {user?.email || ""}
+              </span>
             </div>
           </div>
 
           <button
+            type="button"
             className="logout-button"
             onClick={logout}
           >
             <LogOut size={18} />
+
             Logout
           </button>
         </div>
       </aside>
 
-      {/* MAIN */}
+      {/* =================================================
+          MAIN
+      ================================================= */}
 
       <main className="main-content">
 
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <header className="topbar">
           <button
+            type="button"
             className="mobile-menu-button"
             onClick={() =>
-              setMobileMenu(!mobileMenu)
+              setMobileMenu(
+                (previous) =>
+                  !previous
+              )
             }
           >
             <Menu size={22} />
@@ -656,34 +1183,34 @@ function App() {
           </div>
 
           <div className="topbar-actions">
-            {activePage === "transactions" && (
+            {(activePage ===
+              "dashboard" ||
+              activePage ===
+                "transactions") && (
               <button
+                type="button"
                 className="primary-button"
-                onClick={openAddTransaction}
+                onClick={
+                  openAddTransaction
+                }
               >
                 <Plus size={18} />
-                Add Transaction
-              </button>
-            )}
 
-            {activePage === "dashboard" && (
-              <button
-                className="primary-button"
-                onClick={openAddTransaction}
-              >
-                <Plus size={18} />
                 Add Transaction
               </button>
             )}
           </div>
         </header>
 
-        {/* PERIOD SELECTOR */}
+        {/* =================================================
+            PERIOD SELECTOR
+        ================================================= */}
 
-        {(activePage === "dashboard" ||
-          activePage === "insights") && (
+        {(activePage ===
+          "dashboard" ||
+          activePage ===
+            "insights") && (
           <section className="period-toolbar">
-
             <div>
               <span className="toolbar-label">
                 Analysis period
@@ -704,12 +1231,17 @@ function App() {
                   value={selectedMonth}
                   onChange={(event) =>
                     setSelectedMonth(
-                      Number(event.target.value)
+                      Number(
+                        event.target.value
+                      )
                     )
                   }
                 >
                   {months.map(
-                    (month, index) => (
+                    (
+                      month,
+                      index
+                    ) => (
                       <option
                         key={month}
                         value={index}
@@ -726,7 +1258,9 @@ function App() {
                   value={selectedYear}
                   onChange={(event) =>
                     setSelectedYear(
-                      Number(event.target.value)
+                      Number(
+                        event.target.value
+                      )
                     )
                   }
                 >
@@ -745,12 +1279,13 @@ function App() {
           </section>
         )}
 
-        {/* DASHBOARD */}
+        {/* =================================================
+            DASHBOARD
+        ================================================= */}
 
-        {activePage === "dashboard" && (
+        {activePage ===
+          "dashboard" && (
           <div className="page-container">
-
-            {/* WELCOME */}
 
             <section className="welcome-section">
               <div>
@@ -782,18 +1317,18 @@ function App() {
                 </div>
 
                 <div>
-                  <span>Total Income</span>
+                  <span>
+                    Total Income
+                  </span>
 
                   <strong>
-                    ₹
-                    {totals.income.toLocaleString(
-                      "en-IN"
+                    {formatCurrency(
+                      totals.income
                     )}
                   </strong>
 
                   <small>
-                    {months[selectedMonth]}{" "}
-                    income
+                    {months[selectedMonth]} income
                   </small>
                 </div>
               </div>
@@ -804,18 +1339,18 @@ function App() {
                 </div>
 
                 <div>
-                  <span>Total Expenses</span>
+                  <span>
+                    Total Expenses
+                  </span>
 
                   <strong>
-                    ₹
-                    {totals.expense.toLocaleString(
-                      "en-IN"
+                    {formatCurrency(
+                      totals.expense
                     )}
                   </strong>
 
                   <small>
-                    {months[selectedMonth]}{" "}
-                    spending
+                    {months[selectedMonth]} spending
                   </small>
                 </div>
               </div>
@@ -826,12 +1361,13 @@ function App() {
                 </div>
 
                 <div>
-                  <span>Balance</span>
+                  <span>
+                    Balance
+                  </span>
 
                   <strong>
-                    ₹
-                    {totals.balance.toLocaleString(
-                      "en-IN"
+                    {formatCurrency(
+                      totals.balance
                     )}
                   </strong>
 
@@ -847,19 +1383,20 @@ function App() {
                 </div>
 
                 <div>
-                  <span>Monthly Budget</span>
+                  <span>
+                    Monthly Budget
+                  </span>
 
                   <strong>
-                    ₹
-                    {budget.toLocaleString(
-                      "en-IN"
+                    {formatCurrency(
+                      budget
                     )}
                   </strong>
 
                   <small>
                     {budget > 0
-                      ? `₹${remainingBudget.toLocaleString(
-                          "en-IN"
+                      ? `${formatCurrency(
+                          remainingBudget
                         )} remaining`
                       : "No budget set"}
                   </small>
@@ -872,8 +1409,9 @@ function App() {
 
             <section className="dashboard-grid">
 
-              <div className="glass-card budget-card">
+              {/* BUDGET */}
 
+              <div className="glass-card budget-card">
                 <div className="card-header">
                   <div>
                     <span className="section-label">
@@ -881,12 +1419,12 @@ function App() {
                     </span>
 
                     <h3>
-                      {months[selectedMonth]}{" "}
-                      budget
+                      {months[selectedMonth]} budget
                     </h3>
                   </div>
 
                   <button
+                    type="button"
                     className="icon-button"
                     onClick={() =>
                       setShowBudgetModal(true)
@@ -898,13 +1436,13 @@ function App() {
                 </div>
 
                 <div className="budget-main">
+
                   <div className="budget-amount">
                     <span>Budget</span>
 
                     <strong>
-                      ₹
-                      {budget.toLocaleString(
-                        "en-IN"
+                      {formatCurrency(
+                        budget
                       )}
                     </strong>
                   </div>
@@ -913,9 +1451,8 @@ function App() {
                     <span>Spent</span>
 
                     <strong>
-                      ₹
-                      {totals.expense.toLocaleString(
-                        "en-IN"
+                      {formatCurrency(
+                        totals.expense
                       )}
                     </strong>
                   </div>
@@ -924,12 +1461,12 @@ function App() {
                     <span>Remaining</span>
 
                     <strong>
-                      ₹
-                      {remainingBudget.toLocaleString(
-                        "en-IN"
+                      {formatCurrency(
+                        remainingBudget
                       )}
                     </strong>
                   </div>
+
                 </div>
 
                 <div className="progress-container">
@@ -950,24 +1487,29 @@ function App() {
                     <div
                       className="progress-fill"
                       style={{
-                        width: `${budgetPercentage}%`,
+                        width:
+                          `${budgetPercentage}%`,
                       }}
                     />
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   className="secondary-button full"
                   onClick={() =>
                     setShowBudgetModal(true)
                   }
                 >
                   <WalletCards size={17} />
+
                   {budget > 0
                     ? "Update Monthly Budget"
                     : "Set Monthly Budget"}
                 </button>
               </div>
+
+              {/* RECENT */}
 
               <div className="glass-card recent-card">
 
@@ -983,6 +1525,7 @@ function App() {
                   </div>
 
                   <button
+                    type="button"
                     className="text-button"
                     onClick={() =>
                       setActivePage(
@@ -1001,32 +1544,37 @@ function App() {
 
                     <p>
                       No transactions for{" "}
-                      {months[
-                        selectedMonth
-                      ]}{" "}
+                      {months[selectedMonth]}{" "}
                       {selectedYear}.
                     </p>
 
                     <button
+                      type="button"
                       className="secondary-button"
                       onClick={
                         openAddTransaction
                       }
                     >
                       <Plus size={16} />
+
                       Add Transaction
                     </button>
                   </div>
                 ) : (
                   <div className="recent-list">
+
                     {selectedTransactions
                       .slice(0, 5)
                       .map(
-                        (transaction) => (
+                        (
+                          transaction
+                        ) => (
                           <div
                             className="recent-item"
                             key={
-                              transaction._id
+                              getTransactionId(
+                                transaction
+                              )
                             }
                           >
                             <div className="transaction-symbol">
@@ -1046,12 +1594,12 @@ function App() {
                               <span>
                                 {
                                   transaction.category
-                                }{" "}
-                                •{" "}
-                                {new Date(
+                                }
+
+                                {" • "}
+
+                                {formatDate(
                                   transaction.date
-                                ).toLocaleDateString(
-                                  "en-IN"
                                 )}
                               </span>
                             </div>
@@ -1068,27 +1616,87 @@ function App() {
                               "income"
                                 ? "+"
                                 : "−"}
-                              ₹
-                              {Number(
+
+                              {formatCurrency(
                                 transaction.amount
-                              ).toLocaleString(
-                                "en-IN"
                               )}
                             </strong>
                           </div>
                         )
                       )}
+
                   </div>
                 )}
-
               </div>
+
             </section>
+
+            {/* AI STATUS */}
+
+            <section className="glass-card">
+              <div className="card-header">
+                <div>
+                  <span className="section-label">
+                    AI SERVICE
+                  </span>
+
+                  <h3>
+                    SpendWise AI
+                  </h3>
+                </div>
+              </div>
+
+              {aiLoading && (
+                <p>
+                  Processing your transactions with AI...
+                </p>
+              )}
+
+              {!aiLoading && aiError && (
+                <p>
+                  AI service unavailable:{" "}
+                  {aiError}
+                </p>
+              )}
+
+              {!aiLoading &&
+                !aiError &&
+                aiData && (
+                  <div>
+                    <p>
+                      AI processing completed successfully.
+                    </p>
+
+                    <p>
+                      Processed transactions:{" "}
+                      <strong>
+                        {
+                          aiData.transactionCount
+                        }
+                      </strong>
+                    </p>
+
+                    <p>
+                      Average expense:{" "}
+                      <strong>
+                        {formatCurrency(
+                          aiData.averageExpense
+                        )}
+                      </strong>
+                    </p>
+                  </div>
+                )}
+            </section>
+
           </div>
         )}
 
-        {/* TRANSACTIONS */}
+        {/* =================================================
+            TRANSACTIONS
+        ================================================= */}
 
-        {activePage === "transactions" && (
+        {activePage ===
+          "transactions" && (
           <div className="page-container">
 
             <section className="transactions-intro">
@@ -1105,7 +1713,10 @@ function App() {
 
               <div className="transaction-summary">
                 <div>
-                  <span>Transactions</span>
+                  <span>
+                    Transactions
+                  </span>
+
                   <strong>
                     {
                       selectedTransactions.length
@@ -1114,11 +1725,13 @@ function App() {
                 </div>
 
                 <div>
-                  <span>Spent</span>
+                  <span>
+                    Spent
+                  </span>
+
                   <strong>
-                    ₹
-                    {totals.expense.toLocaleString(
-                      "en-IN"
+                    {formatCurrency(
+                      totals.expense
                     )}
                   </strong>
                 </div>
@@ -1130,7 +1743,9 @@ function App() {
               <div className="card-header">
                 <div>
                   <span className="section-label">
-                    {months[selectedMonth].toUpperCase()}{" "}
+                    {months[
+                      selectedMonth
+                    ].toUpperCase()}{" "}
                     {selectedYear}
                   </span>
 
@@ -1139,15 +1754,15 @@ function App() {
                   </h3>
                 </div>
 
-                {/* ONLY ONE ADD BUTTON */}
-
                 <button
+                  type="button"
                   className="primary-button"
                   onClick={
                     openAddTransaction
                   }
                 >
                   <Plus size={18} />
+
                   Add Transaction
                 </button>
               </div>
@@ -1159,6 +1774,7 @@ function App() {
               ) : selectedTransactions.length ===
                 0 ? (
                 <div className="empty-state">
+
                   <div className="empty-icon">
                     <Receipt size={30} />
                   </div>
@@ -1173,39 +1789,63 @@ function App() {
                   </p>
 
                   <button
+                    type="button"
                     className="primary-button"
                     onClick={
                       openAddTransaction
                     }
                   >
                     <Plus size={18} />
+
                     Add Transaction
                   </button>
+
                 </div>
               ) : (
                 <div className="table-wrapper">
+
                   <table>
                     <thead>
                       <tr>
-                        <th>Transaction</th>
-                        <th>Category</th>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Amount</th>
-                        <th>Actions</th>
+                        <th>
+                          Transaction
+                        </th>
+
+                        <th>
+                          Category
+                        </th>
+
+                        <th>
+                          Date
+                        </th>
+
+                        <th>
+                          Type
+                        </th>
+
+                        <th>
+                          Amount
+                        </th>
+
+                        <th>
+                          Actions
+                        </th>
                       </tr>
                     </thead>
 
                     <tbody>
                       {selectedTransactions.map(
-                        (transaction) => (
+                        (
+                          transaction
+                        ) => (
                           <tr
-                            key={
-                              transaction._id
-                            }
+                            key={getTransactionId(
+                              transaction
+                            )}
                           >
                             <td>
                               <div className="table-title">
+
                                 <div className="mini-icon">
                                   <Receipt
                                     size={15}
@@ -1227,6 +1867,7 @@ function App() {
                                     </span>
                                   )}
                                 </div>
+
                               </div>
                             </td>
 
@@ -1239,16 +1880,16 @@ function App() {
                             </td>
 
                             <td>
-                              {new Date(
+                              {formatDate(
                                 transaction.date
-                              ).toLocaleDateString(
-                                "en-IN"
                               )}
                             </td>
 
                             <td>
                               <span
-                                className={`type-badge ${transaction.type}`}
+                                className={`type-badge ${
+                                  transaction.type
+                                }`}
                               >
                                 {
                                   transaction.type
@@ -1269,24 +1910,25 @@ function App() {
                                 "income"
                                   ? "+"
                                   : "−"}
-                                ₹
-                                {Number(
+
+                                {formatCurrency(
                                   transaction.amount
-                                ).toLocaleString(
-                                  "en-IN"
                                 )}
                               </strong>
                             </td>
 
                             <td>
                               <div className="row-actions">
+
                                 <button
+                                  type="button"
                                   className="icon-button"
                                   onClick={() =>
                                     openEditTransaction(
                                       transaction
                                     )
                                   }
+                                  title="Edit transaction"
                                 >
                                   <Pencil
                                     size={16}
@@ -1294,17 +1936,22 @@ function App() {
                                 </button>
 
                                 <button
+                                  type="button"
                                   className="icon-button danger"
                                   onClick={() =>
                                     handleDelete(
-                                      transaction._id
+                                      getTransactionId(
+                                        transaction
+                                      )
                                     )
                                   }
+                                  title="Delete transaction"
                                 >
                                   <Trash2
                                     size={16}
                                   />
                                 </button>
+
                               </div>
                             </td>
                           </tr>
@@ -1312,6 +1959,7 @@ function App() {
                       )}
                     </tbody>
                   </table>
+
                 </div>
               )}
 
@@ -1319,22 +1967,40 @@ function App() {
           </div>
         )}
 
-        {/* INSIGHTS */}
+        {/* =================================================
+            INSIGHTS
+        ================================================= */}
 
-        {activePage === "insights" && (
+        {activePage ===
+          "insights" && (
           <div className="page-container">
+
             <AllInsights
-              transactions={transactions}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              budget={budget}
+              transactions={
+                transactions
+              }
+
+              selectedMonth={
+                selectedMonth
+              }
+
+              selectedYear={
+                selectedYear
+              }
+
+              budget={
+                budget
+              }
             />
+
           </div>
         )}
 
       </main>
 
-      {/* TRANSACTION MODAL */}
+      {/* ===================================================
+          TRANSACTION MODAL
+      =================================================== */}
 
       {showTransactionModal && (
         <div
@@ -1364,10 +2030,12 @@ function App() {
               </div>
 
               <button
+                type="button"
                 className="icon-button"
                 onClick={
                   closeTransactionModal
                 }
+                disabled={savingTransaction}
               >
                 <X size={20} />
               </button>
@@ -1379,13 +2047,17 @@ function App() {
               }
             >
 
+              {/* TITLE */}
+
               <div className="form-group">
-                <label>
+                <label htmlFor="transaction-title">
                   Title
                 </label>
 
                 <input
+                  id="transaction-title"
                   name="title"
+                  type="text"
                   value={
                     transactionForm.title
                   }
@@ -1394,13 +2066,16 @@ function App() {
                   }
                   placeholder="e.g. Grocery shopping"
                   autoComplete="off"
+                  autoFocus
                 />
               </div>
+
+              {/* AMOUNT + TYPE */}
 
               <div className="form-grid">
 
                 <div className="form-group">
-                  <label>
+                  <label htmlFor="transaction-amount">
                     Amount
                   </label>
 
@@ -1410,6 +2085,7 @@ function App() {
                     />
 
                     <input
+                      id="transaction-amount"
                       type="number"
                       name="amount"
                       value={
@@ -1421,16 +2097,18 @@ function App() {
                       placeholder="0"
                       min="0"
                       step="0.01"
+                      inputMode="decimal"
                     />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>
+                  <label htmlFor="transaction-type">
                     Type
                   </label>
 
                   <select
+                    id="transaction-type"
                     name="type"
                     value={
                       transactionForm.type
@@ -1451,14 +2129,17 @@ function App() {
 
               </div>
 
+              {/* CATEGORY + DATE */}
+
               <div className="form-grid">
 
                 <div className="form-group">
-                  <label>
+                  <label htmlFor="transaction-category">
                     Category
                   </label>
 
                   <select
+                    id="transaction-category"
                     name="category"
                     value={
                       transactionForm.category
@@ -1481,11 +2162,12 @@ function App() {
                 </div>
 
                 <div className="form-group">
-                  <label>
+                  <label htmlFor="transaction-date">
                     Date
                   </label>
 
                   <input
+                    id="transaction-date"
                     type="date"
                     name="date"
                     value={
@@ -1499,12 +2181,15 @@ function App() {
 
               </div>
 
+              {/* NOTE */}
+
               <div className="form-group">
-                <label>
+                <label htmlFor="transaction-note">
                   Note
                 </label>
 
                 <textarea
+                  id="transaction-note"
                   name="note"
                   value={
                     transactionForm.note
@@ -1513,17 +2198,21 @@ function App() {
                     handleFormChange
                   }
                   placeholder="Add an optional note..."
-                  rows="3"
+                  rows={3}
                 />
               </div>
 
+              {/* ACTIONS */}
+
               <div className="modal-actions">
+
                 <button
                   type="button"
                   className="secondary-button"
                   onClick={
                     closeTransactionModal
                   }
+                  disabled={savingTransaction}
                 >
                   Cancel
                 </button>
@@ -1531,13 +2220,17 @@ function App() {
                 <button
                   type="submit"
                   className="primary-button"
+                  disabled={savingTransaction}
                 >
                   <Save size={17} />
 
-                  {editingTransaction
+                  {savingTransaction
+                    ? "Saving..."
+                    : editingTransaction
                     ? "Update Transaction"
                     : "Save Transaction"}
                 </button>
+
               </div>
 
             </form>
@@ -1545,7 +2238,9 @@ function App() {
         </div>
       )}
 
-      {/* BUDGET MODAL */}
+      {/* ===================================================
+          BUDGET MODAL
+      =================================================== */}
 
       {showBudgetModal && (
         <div
@@ -1555,7 +2250,11 @@ function App() {
               event.target ===
               event.currentTarget
             ) {
-              setShowBudgetModal(false);
+              if (!budgetSaving) {
+                setShowBudgetModal(
+                  false
+                );
+              }
             }
           }}
         >
@@ -1573,10 +2272,14 @@ function App() {
               </div>
 
               <button
+                type="button"
                 className="icon-button"
                 onClick={() =>
-                  setShowBudgetModal(false)
+                  setShowBudgetModal(
+                    false
+                  )
                 }
+                disabled={budgetSaving}
               >
                 <X size={20} />
               </button>
@@ -1597,10 +2300,12 @@ function App() {
               </div>
             </div>
 
-            <form onSubmit={saveBudget}>
+            <form
+              onSubmit={saveBudget}
+            >
 
               <div className="form-group">
-                <label>
+                <label htmlFor="budget-input">
                   Monthly budget amount
                 </label>
 
@@ -1608,16 +2313,20 @@ function App() {
                   <span>₹</span>
 
                   <input
+                    id="budget-input"
                     type="number"
                     min="0"
                     step="100"
-                    value={budgetInput}
+                    value={
+                      budgetInput
+                    }
                     onChange={(event) =>
                       setBudgetInput(
                         event.target.value
                       )
                     }
                     placeholder="Enter amount"
+                    inputMode="decimal"
                     autoFocus
                   />
                 </div>
@@ -1630,6 +2339,7 @@ function App() {
               </p>
 
               <div className="modal-actions">
+
                 <button
                   type="button"
                   className="secondary-button"
@@ -1638,6 +2348,7 @@ function App() {
                       false
                     )
                   }
+                  disabled={budgetSaving}
                 >
                   Cancel
                 </button>
@@ -1645,13 +2356,19 @@ function App() {
                 <button
                   type="submit"
                   className="primary-button"
+                  disabled={budgetSaving}
                 >
                   <Save size={17} />
-                  Save Budget
+
+                  {budgetSaving
+                    ? "Saving..."
+                    : "Save Budget"}
                 </button>
+
               </div>
 
             </form>
+
           </div>
         </div>
       )}
@@ -1661,3 +2378,4 @@ function App() {
 }
 
 export default App;
+
