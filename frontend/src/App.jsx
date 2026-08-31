@@ -309,18 +309,15 @@ function App() {
     };
   }, [selectedTransactions]);
 
-  const remainingBudget = Math.max(
-    budget - totals.expense,
-    0
-  );
+  const remainingBudget = budget - totals.expense;
 
   const budgetPercentage =
-    budget > 0
-      ? Math.min(
-          (totals.expense / budget) * 100,
-          100
-        )
-      : 0;
+  budget > 0
+    ? Math.min(
+        (totals.expense / budget) * 100,
+        100
+      )
+    : 0;
 
   /* =====================================================
      FORM
@@ -1327,15 +1324,9 @@ function App() {
         {activePage === "insights" && (
           <div className="page-container">
             <AllInsights
-              transactions={
-                transactions
-              }
-              selectedMonth={
-                selectedMonth
-              }
-              selectedYear={
-                selectedYear
-              }
+              transactions={transactions}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
               budget={budget}
             />
           </div>
