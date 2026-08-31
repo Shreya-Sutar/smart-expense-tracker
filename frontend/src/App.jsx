@@ -1,194 +1,30 @@
-import React, { useMemo, useState } from "react";
-
+import { useEffect, useMemo, useState } from "react";
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+  LayoutDashboard,
+  Receipt,
+  BarChart3,
+  WalletCards,
+  Plus,
+  Pencil,
+  Trash2,
+  LogOut,
+  CalendarDays,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  X,
+  Save,
+  Menu,
+  IndianRupee,
+} from "lucide-react";
+
+import Login from "./Login";
+import Register from "./Register";
+import AllInsights from "./AllInsights";
 
 import "./App.css";
-import AIInsights from "./AIInsights.jsx";
 
-/* =========================================================
-   ICONS
-========================================================= */
-
-const Icons = {
-  Dashboard: () => (
-    <svg viewBox="0 0 24 24">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  ),
-
-  Transactions: () => (
-    <svg viewBox="0 0 24 24">
-      <rect x="4" y="3" width="16" height="18" rx="2" />
-      <path d="M8 8h8M8 12h8M8 16h5" />
-    </svg>
-  ),
-
-  Analytics: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M4 19V5" />
-      <path d="M4 19h16" />
-      <path d="M7 16v-5" />
-      <path d="M12 16V7" />
-      <path d="M17 16V9" />
-    </svg>
-  ),
-
-  AI: () => (
-    <svg viewBox="0 0 24 24">
-      <rect x="5" y="5" width="14" height="14" rx="3" />
-      <path d="M9 9h6v6H9z" />
-      <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
-    </svg>
-  ),
-
-  Wallet: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M3 7h18v12H3z" />
-      <path d="M3 7V5a2 2 0 0 1 2-2h14" />
-      <path d="M16 13h5" />
-      <circle cx="16" cy="13" r="1" />
-    </svg>
-  ),
-
-  Plus: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  ),
-
-  Edit: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-    </svg>
-  ),
-
-  Trash: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="M19 6l-1 15H6L5 6" />
-      <path d="M10 11v6M14 11v6" />
-    </svg>
-  ),
-
-  Search: () => (
-    <svg viewBox="0 0 24 24">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
-    </svg>
-  ),
-
-  Close: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M6 6l12 12M18 6 6 18" />
-    </svg>
-  ),
-
-  ArrowUp: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 19V5" />
-      <path d="m6 11 6-6 6 6" />
-    </svg>
-  ),
-
-  ArrowDown: () => (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 5v14" />
-      <path d="m18 13-6 6-6-6" />
-    </svg>
-  ),
-};
-
-/* =========================================================
-   DATA
-========================================================= */
-
-const initialTransactions = [
-  {
-    id: 1,
-    title: "Lunch",
-    category: "Food",
-    amount: 250,
-    type: "expense",
-    date: "2026-08-30",
-  },
-  {
-    id: 2,
-    title: "Uber",
-    category: "Travel",
-    amount: 180,
-    type: "expense",
-    date: "2026-08-29",
-  },
-  {
-    id: 3,
-    title: "Shopping",
-    category: "Shopping",
-    amount: 1200,
-    type: "expense",
-    date: "2026-08-27",
-  },
-  {
-    id: 4,
-    title: "Salary",
-    category: "Income",
-    amount: 35000,
-    type: "income",
-    date: "2026-08-25",
-  },
-  {
-    id: 5,
-    title: "Electricity Bill",
-    category: "Bills",
-    amount: 1450,
-    type: "expense",
-    date: "2026-08-22",
-  },
-  {
-    id: 6,
-    title: "Movie",
-    category: "Entertainment",
-    amount: 400,
-    type: "expense",
-    date: "2026-08-20",
-  },
-];
-
-const categories = [
-  "Food",
-  "Travel",
-  "Shopping",
-  "Bills",
-  "Entertainment",
-  "Other",
-];
-
-const categoryColors = [
-  "#6366f1",
-  "#06b6d4",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#10b981",
-];
+const API_URL = "http://localhost:5000/api";
 
 const months = [
   "January",
@@ -205,1491 +41,1630 @@ const months = [
   "December",
 ];
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
-const formatCurrency = (value) =>
-  `₹${Number(value || 0).toLocaleString("en-IN")}`;
-
-const formatDate = (date) =>
-  new Date(`${date}T00:00:00`).toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
-
-/* =========================================================
-   APP
-========================================================= */
+const categories = [
+  "Food",
+  "Shopping",
+  "Transport",
+  "Bills",
+  "Entertainment",
+  "Health",
+  "Education",
+  "Travel",
+  "Other",
+];
 
 function App() {
-  const today = new Date();
+  const [token, setToken] = useState(
+    localStorage.getItem("expense_token")
+  );
+
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem(
+      "expense_user"
+    );
+
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [authPage, setAuthPage] = useState("login");
 
   const [activePage, setActivePage] =
     useState("dashboard");
 
+  const now = new Date();
+
+  const [selectedMonth, setSelectedMonth] =
+    useState(now.getMonth());
+
+  const [selectedYear, setSelectedYear] =
+    useState(now.getFullYear());
+
   const [transactions, setTransactions] =
-    useState(initialTransactions);
+    useState([]);
 
-  const [budget, setBudget] = useState(10000);
+  const [budget, setBudget] = useState(0);
 
-  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
+  const [showTransactionModal, setShowTransactionModal] =
+    useState(false);
 
   const [editingTransaction, setEditingTransaction] =
     useState(null);
 
-  const [selectedYear, setSelectedYear] =
-    useState(today.getFullYear());
+  const [showBudgetModal, setShowBudgetModal] =
+    useState(false);
 
-  const [selectedMonth, setSelectedMonth] =
-    useState(today.getMonth());
+  const [mobileMenu, setMobileMenu] =
+    useState(false);
 
-  const [analysisMode, setAnalysisMode] =
-    useState("monthly");
-
-  const [form, setForm] = useState({
-    title: "",
-    amount: "",
-    category: "Food",
-    type: "expense",
-    date: today.toISOString().split("T")[0],
-  });
-
-  /* =======================================================
-     YEARS
-  ======================================================= */
-
-  const availableYears = useMemo(() => {
-    const years = new Set();
-
-    transactions.forEach((transaction) => {
-      const year = new Date(
-        `${transaction.date}T00:00:00`
-      ).getFullYear();
-
-      years.add(year);
+  const [transactionForm, setTransactionForm] =
+    useState({
+      title: "",
+      amount: "",
+      type: "expense",
+      category: "Food",
+      date: new Date().toISOString().split("T")[0],
+      note: "",
     });
 
-    years.add(today.getFullYear());
+  const [budgetInput, setBudgetInput] =
+    useState("");
 
-    return Array.from(years).sort(
-      (a, b) => b - a
+  /* =====================================================
+     AUTH HELPERS
+  ===================================================== */
+
+  const logout = () => {
+    localStorage.removeItem("expense_token");
+    localStorage.removeItem("expense_user");
+
+    setToken(null);
+    setUser(null);
+  };
+
+  const handleLogin = (data) => {
+    localStorage.setItem(
+      "expense_token",
+      data.token
     );
-  }, [transactions]);
 
-  /* =======================================================
-     SELECTED TRANSACTIONS
-  ======================================================= */
+    localStorage.setItem(
+      "expense_user",
+      JSON.stringify(data.user)
+    );
+
+    setToken(data.token);
+    setUser(data.user);
+  };
+
+  const handleRegister = (data) => {
+    localStorage.setItem(
+      "expense_token",
+      data.token
+    );
+
+    localStorage.setItem(
+      "expense_user",
+      JSON.stringify(data.user)
+    );
+
+    setToken(data.token);
+    setUser(data.user);
+  };
+
+  /* =====================================================
+     API
+  ===================================================== */
+
+  const apiFetch = async (
+    endpoint,
+    options = {}
+  ) => {
+    const response = await fetch(
+      `${API_URL}${endpoint}`,
+      {
+        ...options,
+
+        headers: {
+          "Content-Type": "application/json",
+
+          ...(token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : {}),
+
+          ...(options.headers || {}),
+        },
+      }
+    );
+
+    const data = await response
+      .json()
+      .catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Something went wrong"
+      );
+    }
+
+    return data;
+  };
+
+  /* =====================================================
+     FETCH TRANSACTIONS
+  ===================================================== */
+
+  const fetchTransactions = async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+
+      const data = await apiFetch(
+        "/transactions"
+      );
+
+      setTransactions(data);
+    } catch (error) {
+      console.error(error);
+
+      if (
+        error.message.includes("token") ||
+        error.message.includes("Authentication")
+      ) {
+        logout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =====================================================
+     FETCH BUDGET
+  ===================================================== */
+
+  const fetchBudget = async () => {
+    if (!token) return;
+
+    try {
+      const data = await apiFetch(
+        `/budget?month=${
+          selectedMonth + 1
+        }&year=${selectedYear}`
+      );
+
+      setBudget(Number(data.amount || 0));
+      setBudgetInput(
+        data.amount ? String(data.amount) : ""
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchTransactions();
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchBudget();
+    }
+  }, [
+    token,
+    selectedMonth,
+    selectedYear,
+  ]);
+
+  /* =====================================================
+     SELECTED MONTH TRANSACTIONS
+  ===================================================== */
 
   const selectedTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
-      const date = new Date(
-        `${transaction.date}T00:00:00`
+      const date = new Date(transaction.date);
+
+      return (
+        date.getMonth() === selectedMonth &&
+        date.getFullYear() === selectedYear
       );
-
-      if (
-        date.getFullYear() !== selectedYear
-      ) {
-        return false;
-      }
-
-      if (analysisMode === "yearly") {
-        return true;
-      }
-
-      return date.getMonth() === selectedMonth;
     });
   }, [
     transactions,
-    selectedYear,
     selectedMonth,
-    analysisMode,
+    selectedYear,
   ]);
 
-  /* =======================================================
-     TOTALS
-  ======================================================= */
+  /* =====================================================
+     DASHBOARD TOTALS
+  ===================================================== */
 
-  const income = useMemo(
-    () =>
-      selectedTransactions
-        .filter((t) => t.type === "income")
-        .reduce(
-          (sum, t) => sum + Number(t.amount || 0),
-          0
-        ),
-    [selectedTransactions]
+  const totals = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+
+    selectedTransactions.forEach(
+      (transaction) => {
+        const amount = Number(
+          transaction.amount
+        );
+
+        if (transaction.type === "income") {
+          income += amount;
+        } else {
+          expense += amount;
+        }
+      }
+    );
+
+    return {
+      income,
+      expense,
+      balance: income - expense,
+    };
+  }, [selectedTransactions]);
+
+  const remainingBudget = Math.max(
+    budget - totals.expense,
+    0
   );
-
-  const expenses = useMemo(
-    () =>
-      selectedTransactions
-        .filter((t) => t.type === "expense")
-        .reduce(
-          (sum, t) => sum + Number(t.amount || 0),
-          0
-        ),
-    [selectedTransactions]
-  );
-
-  const balance = income - expenses;
 
   const budgetPercentage =
     budget > 0
-      ? Math.min((expenses / budget) * 100, 100)
+      ? Math.min(
+          (totals.expense / budget) * 100,
+          100
+        )
       : 0;
 
-  /* =======================================================
-     FILTER
-  ======================================================= */
+  /* =====================================================
+     FORM
+  ===================================================== */
 
-  const filteredTransactions = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return [...selectedTransactions]
-      .filter((transaction) => {
-        if (!query) return true;
-
-        return `${transaction.title} ${transaction.category} ${transaction.type}`
-          .toLowerCase()
-          .includes(query);
-      })
-      .sort(
-        (a, b) =>
-          new Date(`${b.date}T00:00:00`) -
-          new Date(`${a.date}T00:00:00`)
-      );
-  }, [selectedTransactions, search]);
-
-  /* =======================================================
-     MONTHLY DATA
-  ======================================================= */
-
-  const monthlyData = useMemo(() => {
-    return months.map((month, index) => {
-      let expense = 0;
-      let incomeAmount = 0;
-
-      transactions.forEach((transaction) => {
-        const date = new Date(
-          `${transaction.date}T00:00:00`
-        );
-
-        if (
-          date.getFullYear() === selectedYear &&
-          date.getMonth() === index
-        ) {
-          if (transaction.type === "expense") {
-            expense += Number(transaction.amount || 0);
-          } else {
-            incomeAmount += Number(transaction.amount || 0);
-          }
-        }
-      });
-
-      return {
-        month: month.substring(0, 3),
-        expense,
-        income: incomeAmount,
-      };
-    });
-  }, [transactions, selectedYear]);
-
-  /* =======================================================
-     CATEGORY DATA
-  ======================================================= */
-
-  const categoryData = useMemo(() => {
-    const map = {};
-
-    selectedTransactions
-      .filter((transaction) => transaction.type === "expense")
-      .forEach((transaction) => {
-        map[transaction.category] =
-          (map[transaction.category] || 0) +
-          Number(transaction.amount || 0);
-      });
-
-    return Object.entries(map).map(
-      ([name, value]) => ({
-        name,
-        value,
-      })
-    );
-  }, [selectedTransactions]);
-
-  /* =======================================================
-     TREND
-  ======================================================= */
-
-  const trendData = useMemo(() => {
-    const sorted = [...selectedTransactions].sort(
-      (a, b) =>
-        new Date(`${a.date}T00:00:00`) -
-        new Date(`${b.date}T00:00:00`)
-    );
-
-    let runningTotal = 0;
-
-    return sorted.map((transaction) => {
-      if (transaction.type === "expense") {
-        runningTotal += Number(transaction.amount || 0);
-      }
-
-      return {
-        date: new Date(
-          `${transaction.date}T00:00:00`
-        ).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-        }),
-        spending: runningTotal,
-      };
-    });
-  }, [selectedTransactions]);
-
-  /* =======================================================
-     MODAL
-  ======================================================= */
-
-  const openAddModal = () => {
+  const openAddTransaction = () => {
     setEditingTransaction(null);
 
-    setForm({
+    setTransactionForm({
       title: "",
       amount: "",
-      category: "Food",
       type: "expense",
+      category: "Food",
       date: new Date().toISOString().split("T")[0],
+      note: "",
     });
 
-    setShowModal(true);
+    setShowTransactionModal(true);
   };
 
-  const openEditModal = (transaction) => {
+  const openEditTransaction = (
+    transaction
+  ) => {
     setEditingTransaction(transaction);
 
-    setForm({
-      title: transaction.title || "",
-      amount: String(transaction.amount || ""),
-      category:
-        transaction.type === "income"
-          ? "Income"
-          : transaction.category || "Food",
-      type: transaction.type || "expense",
-      date: transaction.date,
+    setTransactionForm({
+      title: transaction.title,
+      amount: transaction.amount,
+      type: transaction.type,
+      category: transaction.category,
+      date: new Date(transaction.date)
+        .toISOString()
+        .split("T")[0],
+      note: transaction.note || "",
     });
 
-    setShowModal(true);
+    setShowTransactionModal(true);
   };
 
-  const closeModal = () => {
-    setShowModal(false);
+  const closeTransactionModal = () => {
+    setShowTransactionModal(false);
     setEditingTransaction(null);
   };
 
-  /* =======================================================
-     FORM — FIXED
-  ======================================================= */
+  const handleFormChange = (event) => {
+    const {
+      name,
+      value,
+    } = event.target;
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setForm((previous) => ({
+    setTransactionForm((previous) => ({
       ...previous,
       [name]: value,
     }));
   };
 
-  const handleTypeChange = (event) => {
-    const type = event.target.value;
+  /* =====================================================
+     ADD / UPDATE TRANSACTION
+  ===================================================== */
 
-    setForm((previous) => ({
-      ...previous,
-      type,
-      category:
-        type === "income"
-          ? "Income"
-          : previous.category === "Income"
-          ? "Food"
-          : previous.category,
-    }));
-  };
-
-  const handleSubmit = (event) => {
+  const handleTransactionSubmit = async (
+    event
+  ) => {
     event.preventDefault();
 
-    const title = form.title.trim();
-    const amount = Number(form.amount);
-
-    if (!title) {
-      window.alert("Please enter a transaction name.");
-      return;
-    }
-
-    if (!form.amount || !Number.isFinite(amount) || amount <= 0) {
-      window.alert("Please enter a valid amount.");
-      return;
-    }
-
-    if (!form.date) {
-      window.alert("Please select a date.");
-      return;
-    }
-
-    const transactionData = {
-      title,
-      amount,
-      category:
-        form.type === "income"
-          ? "Income"
-          : form.category,
-      type: form.type,
-      date: form.date,
-    };
-
-    if (editingTransaction) {
-      setTransactions((previous) =>
-        previous.map((transaction) =>
-          transaction.id === editingTransaction.id
-            ? {
-                ...transaction,
-                ...transactionData,
-              }
-            : transaction
-        )
+    if (
+      !transactionForm.title.trim() ||
+      !transactionForm.amount ||
+      Number(transactionForm.amount) <= 0 ||
+      !transactionForm.date
+    ) {
+      alert(
+        "Please enter a valid title, amount and date."
       );
-    } else {
-      setTransactions((previous) => [
-        {
-          id: Date.now(),
-          ...transactionData,
-        },
-        ...previous,
-      ]);
+
+      return;
     }
 
-    closeModal();
+    try {
+      const payload = {
+        ...transactionForm,
+        amount: Number(
+          transactionForm.amount
+        ),
+      };
+
+      if (editingTransaction) {
+        await apiFetch(
+          `/transactions/${editingTransaction._id}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          }
+        );
+      } else {
+        await apiFetch(
+          "/transactions",
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }
+        );
+      }
+
+      await fetchTransactions();
+
+      closeTransactionModal();
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
-  /* =======================================================
+  /* =====================================================
      DELETE
-  ======================================================= */
+  ===================================================== */
 
-  const deleteTransaction = (id) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this transaction?"
     );
 
     if (!confirmed) return;
 
-    setTransactions((previous) =>
-      previous.filter(
-        (transaction) => transaction.id !== id
-      )
-    );
+    try {
+      await apiFetch(
+        `/transactions/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      await fetchTransactions();
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
-  /* =======================================================
-     PERIOD
-  ======================================================= */
+  /* =====================================================
+     BUDGET
+  ===================================================== */
 
-  const PeriodSelector = ({ title }) => (
-    <div className="period-selector">
-      <div className="period-info">
-        <span>{title}</span>
+  const saveBudget = async (event) => {
+    event.preventDefault();
 
-        <strong>
-          {analysisMode === "yearly"
-            ? `Full Year ${selectedYear}`
-            : `${months[selectedMonth]} ${selectedYear}`}
-        </strong>
-      </div>
+    const amount = Number(budgetInput);
 
-      <div className="period-controls">
-        <select
-          value={selectedYear}
-          onChange={(event) =>
-            setSelectedYear(
-              Number(event.target.value)
-            )
-          }
-        >
-          {availableYears.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+    if (Number.isNaN(amount) || amount < 0) {
+      alert(
+        "Please enter a valid budget amount."
+      );
 
-        <select
-          value={
-            analysisMode === "yearly"
-              ? "yearly"
-              : String(selectedMonth)
-          }
-          onChange={(event) => {
-            if (event.target.value === "yearly") {
-              setAnalysisMode("yearly");
-            } else {
-              setAnalysisMode("monthly");
-              setSelectedMonth(
-                Number(event.target.value)
-              );
-            }
-          }}
-        >
-          {months.map((month, index) => (
-            <option
-              key={month}
-              value={index}
-            >
-              {month}
-            </option>
-          ))}
+      return;
+    }
 
-          <option value="yearly">
-            Full Year
-          </option>
-        </select>
-      </div>
-    </div>
-  );
+    try {
+      await apiFetch("/budget", {
+        method: "PUT",
 
-  /* =======================================================
-     STAT
-  ======================================================= */
+        body: JSON.stringify({
+          month: selectedMonth + 1,
+          year: selectedYear,
+          amount,
+        }),
+      });
 
-  const StatCard = ({
-    title,
-    value,
-    subtitle,
-    type,
-    icon,
-  }) => (
-    <div className={`stat-card ${type}`}>
-      <div className="stat-content">
-        <span className="stat-title">
-          {title}
-        </span>
+      setBudget(amount);
 
-        <h2>{formatCurrency(value)}</h2>
+      setShowBudgetModal(false);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
-        <small>{subtitle}</small>
-      </div>
+  /* =====================================================
+     YEAR OPTIONS
+  ===================================================== */
 
-      <div className="stat-icon">
-        {icon}
-      </div>
-    </div>
-  );
+  const years = [];
 
-  /* =======================================================
-     TRANSACTION LIST
-  ======================================================= */
+  for (
+    let year = now.getFullYear() - 4;
+    year <= now.getFullYear() + 2;
+    year++
+  ) {
+    years.push(year);
+  }
 
-  const TransactionList = ({ limit }) => {
-    const list = limit
-      ? filteredTransactions.slice(0, limit)
-      : filteredTransactions;
+  /* =====================================================
+     AUTH SCREEN
+  ===================================================== */
 
-    if (list.length === 0) {
+  if (!token || !user) {
+    if (authPage === "register") {
       return (
-        <div className="empty-state">
-          <div className="empty-icon">
-            <Icons.Wallet />
-          </div>
-
-          <strong>No transactions found</strong>
-
-          <span>
-            Add a transaction to start tracking
-            your money.
-          </span>
-        </div>
+        <Register
+          onRegister={handleRegister}
+          onLogin={() =>
+            setAuthPage("login")
+          }
+        />
       );
     }
 
     return (
-      <div className="transaction-list">
-        {list.map((transaction) => (
-          <div
-            className="transaction-row"
-            key={transaction.id}
-          >
-            <div className="transaction-info">
-              <div
-                className={`transaction-avatar ${transaction.type}`}
-              >
-                {transaction.title
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-
-              <div className="transaction-details">
-                <strong>
-                  {transaction.title}
-                </strong>
-
-                <small>
-                  {transaction.category}
-                  <span>•</span>
-                  {formatDate(transaction.date)}
-                </small>
-              </div>
-            </div>
-
-            <div
-              className={`transaction-amount ${transaction.type}`}
-            >
-              {transaction.type === "income"
-                ? "+"
-                : "-"}
-              {formatCurrency(transaction.amount)}
-            </div>
-
-            <div className="transaction-actions">
-              <button
-                type="button"
-                onClick={() =>
-                  openEditModal(transaction)
-                }
-                title="Edit"
-              >
-                <Icons.Edit />
-              </button>
-
-              <button
-                type="button"
-                className="delete-action"
-                onClick={() =>
-                  deleteTransaction(transaction.id)
-                }
-                title="Delete"
-              >
-                <Icons.Trash />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  /* =======================================================
-     HEADER
-  ======================================================= */
-
-  const PageHeader = ({
-    eyebrow,
-    title,
-    description,
-    action,
-  }) => (
-    <div className="page-header">
-      <div>
-        <span className="eyebrow">
-          {eyebrow}
-        </span>
-
-        <h1>{title}</h1>
-
-        <p>{description}</p>
-      </div>
-
-      {action}
-    </div>
-  );
-
-  /* =======================================================
-     DASHBOARD
-  ======================================================= */
-
-  const Dashboard = () => (
-    <>
-      <PageHeader
-        eyebrow="OVERVIEW"
-        title="Dashboard"
-        description="Track your money and understand your spending."
-        action={
-          <button
-            type="button"
-            className="primary-button"
-            onClick={openAddModal}
-          >
-            <Icons.Plus />
-            Add Transaction
-          </button>
+      <Login
+        onLogin={handleLogin}
+        onRegister={() =>
+          setAuthPage("register")
         }
       />
+    );
+  }
 
-      <PeriodSelector title="View Analysis" />
+  /* =====================================================
+     NAVIGATION
+  ===================================================== */
 
-      <div className="stats-grid">
-        <StatCard
-          title="Total Balance"
-          value={balance}
-          subtitle="Income minus expenses"
-          type={
-            balance >= 0
-              ? "balance-card"
-              : "negative-card"
-          }
-          icon={
-            balance >= 0 ? (
-              <Icons.ArrowUp />
-            ) : (
-              <Icons.ArrowDown />
-            )
-          }
-        />
+  const navigation = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    },
 
-        <StatCard
-          title="Total Income"
-          value={income}
-          subtitle="Money received"
-          type="income-card"
-          icon={<Icons.ArrowDown />}
-        />
+    {
+      id: "transactions",
+      label: "Transactions",
+      icon: Receipt,
+    },
 
-        <StatCard
-          title="Total Expenses"
-          value={expenses}
-          subtitle="Money spent"
-          type="expense-card"
-          icon={<Icons.ArrowUp />}
-        />
+    {
+      id: "insights",
+      label: "Insights",
+      icon: BarChart3,
+    },
+  ];
 
-        <StatCard
-          title="Budget Remaining"
-          value={Math.max(
-            budget - expenses,
-            0
-          )}
-          subtitle={`Budget: ${formatCurrency(
-            budget
-          )}`}
-          type="budget-card"
-          icon={<Icons.Wallet />}
-        />
-      </div>
+  const pageTitle =
+    activePage === "dashboard"
+      ? "Dashboard"
+      : activePage === "transactions"
+      ? "Transactions"
+      : "Insights";
 
-      <div className="dashboard-grid">
-        <div className="panel chart-panel">
-          <div className="panel-header">
-            <div>
-              <span className="panel-label">
-                FINANCIAL OVERVIEW
-              </span>
+  return (
+    <div className="app-shell">
 
-              <h3>Monthly Spending</h3>
+      {/* SIDEBAR */}
 
-              <p>
-                Income compared with expenses
-              </p>
-            </div>
+      <aside
+        className={`sidebar ${
+          mobileMenu ? "sidebar-open" : ""
+        }`}
+      >
+        <div className="brand">
+          <div className="brand-icon">
+            <WalletCards size={23} />
           </div>
 
-          <div className="chart-container">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-              <BarChart data={monthlyData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                />
-
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                />
-
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                />
-
-                <Tooltip
-                  formatter={(value) =>
-                    formatCurrency(value)
-                  }
-                />
-
-                <Legend />
-
-                <Bar
-                  dataKey="income"
-                  name="Income"
-                  fill="#10b981"
-                  radius={[6, 6, 0, 0]}
-                />
-
-                <Bar
-                  dataKey="expense"
-                  name="Expense"
-                  fill="#6366f1"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="panel budget-panel">
-          <div className="panel-header">
-            <div>
-              <span className="panel-label">
-                SPENDING CONTROL
-              </span>
-
-              <h3>Budget</h3>
-
-              <p>
-                Monthly spending limit
-              </p>
-            </div>
-          </div>
-
-          <div className="budget-number">
-            {formatCurrency(expenses)}
-
-            <span>
-              / {formatCurrency(budget)}
-            </span>
-          </div>
-
-          <div className="progress">
-            <div
-              className={`progress-fill ${
-                budgetPercentage >= 100
-                  ? "danger"
-                  : ""
-              }`}
-              style={{
-                width: `${budgetPercentage}%`,
-              }}
-            />
-          </div>
-
-          <div className="budget-meta">
-            <span>
-              {Math.round(budgetPercentage)}%
-              {" "}used
-            </span>
-
-            <span>
-              {formatCurrency(
-                Math.max(
-                  budget - expenses,
-                  0
-                )
-              )}{" "}
-              left
-            </span>
-          </div>
-
-          <p className="budget-text">
-            {budgetPercentage >= 100
-              ? "⚠️ You have exceeded your budget."
-              : "You're within your spending limit."}
-          </p>
-
-          <div className="budget-edit">
-            <label>Set Budget</label>
-
-            <div className="budget-input">
-              <span>₹</span>
-
-              <input
-                type="number"
-                min="0"
-                value={budget}
-                onChange={(event) =>
-                  setBudget(
-                    Math.max(
-                      0,
-                      Number(event.target.value) || 0
-                    )
-                  )
-                }
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="panel recent-panel">
-        <div className="panel-header">
           <div>
-            <span className="panel-label">
-              ACTIVITY
-            </span>
+            <h1>SpendWise</h1>
+            <span>Smart Expense Manager</span>
+          </div>
+        </div>
 
-            <h3>Recent Transactions</h3>
+        <nav className="sidebar-nav">
+          {navigation.map((item) => {
+            const Icon = item.icon;
 
-            <p>
-              Your latest financial activity
-            </p>
+            return (
+              <button
+                key={item.id}
+                className={`nav-item ${
+                  activePage === item.id
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() => {
+                  setActivePage(item.id);
+                  setMobileMenu(false);
+                }}
+              >
+                <Icon size={19} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="user-card">
+            <div className="avatar">
+              {user.name
+                ?.charAt(0)
+                ?.toUpperCase()}
+            </div>
+
+            <div className="user-info">
+              <strong>{user.name}</strong>
+              <span>{user.email}</span>
+            </div>
           </div>
 
           <button
-            type="button"
-            className="text-button"
+            className="logout-button"
+            onClick={logout}
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+
+      <main className="main-content">
+
+        {/* HEADER */}
+
+        <header className="topbar">
+          <button
+            className="mobile-menu-button"
             onClick={() =>
-              setActivePage("transactions")
+              setMobileMenu(!mobileMenu)
             }
           >
-            View All →
+            <Menu size={22} />
           </button>
-        </div>
 
-        <TransactionList limit={5} />
-      </div>
-    </>
-  );
+          <div>
+            <p className="eyebrow">
+              PERSONAL FINANCE
+            </p>
 
-  /* =======================================================
-     TRANSACTIONS PAGE
-  ======================================================= */
-
-  const TransactionsPage = () => (
-    <>
-      <PageHeader
-        eyebrow="MONEY ACTIVITY"
-        title="Transactions"
-        description="Manage all your income and expenses."
-        action={
-          <button
-            type="button"
-            className="primary-button"
-            onClick={openAddModal}
-          >
-            <Icons.Plus />
-            Add Transaction
-          </button>
-        }
-      />
-
-      <PeriodSelector title="Showing Transactions" />
-
-      <div className="panel transactions-panel">
-        <div className="transaction-toolbar">
-          <div className="search-box">
-            <Icons.Search />
-
-            <input
-              type="search"
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              placeholder="Search transactions..."
-            />
+            <h2>{pageTitle}</h2>
           </div>
 
-          <div className="transaction-count">
-            {filteredTransactions.length}{" "}
-            {filteredTransactions.length === 1
-              ? "transaction"
-              : "transactions"}
-          </div>
-        </div>
-
-        <TransactionList />
-      </div>
-    </>
-  );
-
-  /* =======================================================
-     ANALYTICS
-  ======================================================= */
-
-  const AnalyticsPage = () => (
-    <>
-      <PageHeader
-        eyebrow="INSIGHTS"
-        title="Analytics"
-        description="Visualize your financial habits and spending patterns."
-      />
-
-      <PeriodSelector title="Analytics Period" />
-
-      <div className="analytics-stats">
-        <div className="analytics-mini-card">
-          <span>Total Income</span>
-          <strong>
-            {formatCurrency(income)}
-          </strong>
-        </div>
-
-        <div className="analytics-mini-card">
-          <span>Total Expenses</span>
-          <strong>
-            {formatCurrency(expenses)}
-          </strong>
-        </div>
-
-        <div className="analytics-mini-card">
-          <span>Savings</span>
-          <strong>
-            {formatCurrency(
-              Math.max(balance, 0)
+          <div className="topbar-actions">
+            {activePage === "transactions" && (
+              <button
+                className="primary-button"
+                onClick={openAddTransaction}
+              >
+                <Plus size={18} />
+                Add Transaction
+              </button>
             )}
-          </strong>
-        </div>
 
-        <div className="analytics-mini-card">
-          <span>Budget Used</span>
-          <strong>
-            {Math.round(budgetPercentage)}%
-          </strong>
-        </div>
-      </div>
-
-      <div className="analytics-grid">
-        <div className="panel chart-panel">
-          <div className="panel-header">
-            <div>
-              <span className="panel-label">
-                COMPARISON
-              </span>
-
-              <h3>
-                Income vs Expenses
-              </h3>
-            </div>
-          </div>
-
-          <div className="large-chart">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-              <BarChart
-                data={
-                  analysisMode === "yearly"
-                    ? monthlyData
-                    : [
-                        {
-                          month:
-                            months[
-                              selectedMonth
-                            ].substring(0, 3),
-                          income,
-                          expense: expenses,
-                        },
-                      ]
-                }
+            {activePage === "dashboard" && (
+              <button
+                className="primary-button"
+                onClick={openAddTransaction}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                />
-
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                />
-
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                />
-
-                <Tooltip
-                  formatter={(value) =>
-                    formatCurrency(value)
-                  }
-                />
-
-                <Legend />
-
-                <Bar
-                  dataKey="income"
-                  name="Income"
-                  fill="#10b981"
-                  radius={[8, 8, 0, 0]}
-                />
-
-                <Bar
-                  dataKey="expense"
-                  name="Expenses"
-                  fill="#ef4444"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="panel chart-panel">
-          <div className="panel-header">
-            <div>
-              <span className="panel-label">
-                BREAKDOWN
-              </span>
-
-              <h3>
-                Expenses by Category
-              </h3>
-            </div>
-          </div>
-
-          <div className="pie-chart-container">
-            {categoryData.length === 0 ? (
-              <div className="empty-state">
-                <strong>
-                  No expense data
-                </strong>
-
-                <span>
-                  Add an expense to see the
-                  breakdown.
-                </span>
-              </div>
-            ) : (
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {categoryData.map(
-                      (entry, index) => (
-                        <Cell
-                          key={entry.name}
-                          fill={
-                            categoryColors[
-                              index %
-                                categoryColors.length
-                            ]
-                          }
-                        />
-                      )
-                    )}
-                  </Pie>
-
-                  <Tooltip
-                    formatter={(value) =>
-                      formatCurrency(value)
-                    }
-                  />
-
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+                <Plus size={18} />
+                Add Transaction
+              </button>
             )}
           </div>
-        </div>
+        </header>
 
-        <div className="panel chart-panel full-width">
-          <div className="panel-header">
+        {/* PERIOD SELECTOR */}
+
+        {(activePage === "dashboard" ||
+          activePage === "insights") && (
+          <section className="period-toolbar">
+
             <div>
-              <span className="panel-label">
-                SPENDING TREND
+              <span className="toolbar-label">
+                Analysis period
               </span>
 
-              <h3>
-                Cumulative Spending
-              </h3>
-            </div>
-          </div>
-
-          <div className="large-chart">
-            {trendData.length === 0 ? (
-              <div className="empty-state">
-                <strong>
-                  No spending data
-                </strong>
-              </div>
-            ) : (
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <LineChart data={trendData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                  />
-
-                  <XAxis
-                    dataKey="date"
-                    axisLine={false}
-                    tickLine={false}
-                  />
-
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                  />
-
-                  <Tooltip
-                    formatter={(value) =>
-                      formatCurrency(value)
-                    }
-                  />
-
-                  <Line
-                    type="monotone"
-                    dataKey="spending"
-                    name="Spending"
-                    stroke="#6366f1"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-
-  /* =======================================================
-     MODAL
-  ======================================================= */
-
-  const TransactionModal = () => {
-    if (!showModal) return null;
-
-    return (
-      <div
-        className="modal-overlay"
-        onMouseDown={(event) => {
-          if (
-            event.target ===
-            event.currentTarget
-          ) {
-            closeModal();
-          }
-        }}
-      >
-        <div
-          className="modal"
-          onMouseDown={(event) =>
-            event.stopPropagation()
-          }
-        >
-          <div className="modal-header">
-            <div>
-              <span className="panel-label">
-                TRANSACTION
-              </span>
-
-              <h2>
-                {editingTransaction
-                  ? "Edit Transaction"
-                  : "Add Transaction"}
-              </h2>
-
-              <p>
-                Enter your transaction details
-                below.
-              </p>
+              <strong>
+                {months[selectedMonth]}{" "}
+                {selectedYear}
+              </strong>
             </div>
 
-            <button
-              type="button"
-              className="close-button"
-              onClick={closeModal}
-            >
-              <Icons.Close />
-            </button>
-          </div>
+            <div className="period-controls">
 
-          <form
-            className="transaction-form"
-            onSubmit={handleSubmit}
-          >
-            <div className="form-group">
-              <label htmlFor="transaction-title">
-                Transaction Name
-              </label>
-
-              <input
-                id="transaction-title"
-                name="title"
-                type="text"
-                value={form.title}
-                onChange={handleChange}
-                placeholder="e.g. Grocery shopping"
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="transaction-amount">
-                  Amount
-                </label>
-
-                <div className="currency-input">
-                  <span>₹</span>
-
-                  <input
-                    id="transaction-amount"
-                    name="amount"
-                    type="number"
-                    inputMode="decimal"
-                    min="0.01"
-                    step="0.01"
-                    value={form.amount}
-                    onChange={handleChange}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="transaction-type">
-                  Type
-                </label>
+              <div className="select-wrapper">
+                <CalendarDays size={17} />
 
                 <select
-                  id="transaction-type"
-                  name="type"
-                  value={form.type}
-                  onChange={handleTypeChange}
-                >
-                  <option value="expense">
-                    Expense
-                  </option>
-
-                  <option value="income">
-                    Income
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="transaction-category">
-                  Category
-                </label>
-
-                <select
-                  id="transaction-category"
-                  name="category"
-                  value={form.category}
-                  onChange={handleChange}
-                  disabled={
-                    form.type === "income"
+                  value={selectedMonth}
+                  onChange={(event) =>
+                    setSelectedMonth(
+                      Number(event.target.value)
+                    )
                   }
                 >
-                  {form.type === "income" ? (
-                    <option value="Income">
-                      Income
-                    </option>
-                  ) : (
-                    categories.map((category) => (
+                  {months.map(
+                    (month, index) => (
                       <option
-                        key={category}
-                        value={category}
+                        key={month}
+                        value={index}
                       >
-                        {category}
+                        {month}
                       </option>
-                    ))
+                    )
                   )}
                 </select>
               </div>
 
+              <div className="select-wrapper">
+                <select
+                  value={selectedYear}
+                  onChange={(event) =>
+                    setSelectedYear(
+                      Number(event.target.value)
+                    )
+                  }
+                >
+                  {years.map((year) => (
+                    <option
+                      key={year}
+                      value={year}
+                    >
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+            </div>
+          </section>
+        )}
+
+        {/* DASHBOARD */}
+
+        {activePage === "dashboard" && (
+          <div className="page-container">
+
+            {/* WELCOME */}
+
+            <section className="welcome-section">
+              <div>
+                <p className="welcome-small">
+                  Welcome back 👋
+                </p>
+
+                <h1>
+                  Here's your financial
+                  overview.
+                </h1>
+
+                <p>
+                  Track your spending,
+                  manage your budget and
+                  make smarter financial
+                  decisions.
+                </p>
+              </div>
+            </section>
+
+            {/* STATS */}
+
+            <section className="stats-grid">
+
+              <div className="stat-card">
+                <div className="stat-icon income">
+                  <TrendingUp size={21} />
+                </div>
+
+                <div>
+                  <span>Total Income</span>
+
+                  <strong>
+                    ₹
+                    {totals.income.toLocaleString(
+                      "en-IN"
+                    )}
+                  </strong>
+
+                  <small>
+                    {months[selectedMonth]}{" "}
+                    income
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon expense">
+                  <TrendingDown size={21} />
+                </div>
+
+                <div>
+                  <span>Total Expenses</span>
+
+                  <strong>
+                    ₹
+                    {totals.expense.toLocaleString(
+                      "en-IN"
+                    )}
+                  </strong>
+
+                  <small>
+                    {months[selectedMonth]}{" "}
+                    spending
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon balance">
+                  <Wallet size={21} />
+                </div>
+
+                <div>
+                  <span>Balance</span>
+
+                  <strong>
+                    ₹
+                    {totals.balance.toLocaleString(
+                      "en-IN"
+                    )}
+                  </strong>
+
+                  <small>
+                    Income − Expenses
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon budget">
+                  <WalletCards size={21} />
+                </div>
+
+                <div>
+                  <span>Monthly Budget</span>
+
+                  <strong>
+                    ₹
+                    {budget.toLocaleString(
+                      "en-IN"
+                    )}
+                  </strong>
+
+                  <small>
+                    {budget > 0
+                      ? `₹${remainingBudget.toLocaleString(
+                          "en-IN"
+                        )} remaining`
+                      : "No budget set"}
+                  </small>
+                </div>
+              </div>
+
+            </section>
+
+            {/* BUDGET + RECENT */}
+
+            <section className="dashboard-grid">
+
+              <div className="glass-card budget-card">
+
+                <div className="card-header">
+                  <div>
+                    <span className="section-label">
+                      MONTHLY BUDGET
+                    </span>
+
+                    <h3>
+                      {months[selectedMonth]}{" "}
+                      budget
+                    </h3>
+                  </div>
+
+                  <button
+                    className="icon-button"
+                    onClick={() =>
+                      setShowBudgetModal(true)
+                    }
+                    title="Edit budget"
+                  >
+                    <Pencil size={17} />
+                  </button>
+                </div>
+
+                <div className="budget-main">
+                  <div className="budget-amount">
+                    <span>Budget</span>
+
+                    <strong>
+                      ₹
+                      {budget.toLocaleString(
+                        "en-IN"
+                      )}
+                    </strong>
+                  </div>
+
+                  <div className="budget-amount">
+                    <span>Spent</span>
+
+                    <strong>
+                      ₹
+                      {totals.expense.toLocaleString(
+                        "en-IN"
+                      )}
+                    </strong>
+                  </div>
+
+                  <div className="budget-amount">
+                    <span>Remaining</span>
+
+                    <strong>
+                      ₹
+                      {remainingBudget.toLocaleString(
+                        "en-IN"
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="progress-container">
+                  <div className="progress-label">
+                    <span>
+                      Budget usage
+                    </span>
+
+                    <strong>
+                      {Math.round(
+                        budgetPercentage
+                      )}
+                      %
+                    </strong>
+                  </div>
+
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${budgetPercentage}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  className="secondary-button full"
+                  onClick={() =>
+                    setShowBudgetModal(true)
+                  }
+                >
+                  <WalletCards size={17} />
+                  {budget > 0
+                    ? "Update Monthly Budget"
+                    : "Set Monthly Budget"}
+                </button>
+              </div>
+
+              <div className="glass-card recent-card">
+
+                <div className="card-header">
+                  <div>
+                    <span className="section-label">
+                      RECENT ACTIVITY
+                    </span>
+
+                    <h3>
+                      Latest transactions
+                    </h3>
+                  </div>
+
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      setActivePage(
+                        "transactions"
+                      )
+                    }
+                  >
+                    View all
+                  </button>
+                </div>
+
+                {selectedTransactions.length ===
+                0 ? (
+                  <div className="empty-state small">
+                    <Receipt size={32} />
+
+                    <p>
+                      No transactions for{" "}
+                      {months[
+                        selectedMonth
+                      ]}{" "}
+                      {selectedYear}.
+                    </p>
+
+                    <button
+                      className="secondary-button"
+                      onClick={
+                        openAddTransaction
+                      }
+                    >
+                      <Plus size={16} />
+                      Add Transaction
+                    </button>
+                  </div>
+                ) : (
+                  <div className="recent-list">
+                    {selectedTransactions
+                      .slice(0, 5)
+                      .map(
+                        (transaction) => (
+                          <div
+                            className="recent-item"
+                            key={
+                              transaction._id
+                            }
+                          >
+                            <div className="transaction-symbol">
+                              {transaction.type ===
+                              "income"
+                                ? "+"
+                                : "−"}
+                            </div>
+
+                            <div className="recent-details">
+                              <strong>
+                                {
+                                  transaction.title
+                                }
+                              </strong>
+
+                              <span>
+                                {
+                                  transaction.category
+                                }{" "}
+                                •{" "}
+                                {new Date(
+                                  transaction.date
+                                ).toLocaleDateString(
+                                  "en-IN"
+                                )}
+                              </span>
+                            </div>
+
+                            <strong
+                              className={
+                                transaction.type ===
+                                "income"
+                                  ? "amount-positive"
+                                  : "amount-negative"
+                              }
+                            >
+                              {transaction.type ===
+                              "income"
+                                ? "+"
+                                : "−"}
+                              ₹
+                              {Number(
+                                transaction.amount
+                              ).toLocaleString(
+                                "en-IN"
+                              )}
+                            </strong>
+                          </div>
+                        )
+                      )}
+                  </div>
+                )}
+
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TRANSACTIONS */}
+
+        {activePage === "transactions" && (
+          <div className="page-container">
+
+            <section className="transactions-intro">
+              <div>
+                <h1>
+                  Your Transactions
+                </h1>
+
+                <p>
+                  Manage all your income and
+                  expenses in one place.
+                </p>
+              </div>
+
+              <div className="transaction-summary">
+                <div>
+                  <span>Transactions</span>
+                  <strong>
+                    {
+                      selectedTransactions.length
+                    }
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Spent</span>
+                  <strong>
+                    ₹
+                    {totals.expense.toLocaleString(
+                      "en-IN"
+                    )}
+                  </strong>
+                </div>
+              </div>
+            </section>
+
+            <section className="glass-card transaction-table-card">
+
+              <div className="card-header">
+                <div>
+                  <span className="section-label">
+                    {months[selectedMonth].toUpperCase()}{" "}
+                    {selectedYear}
+                  </span>
+
+                  <h3>
+                    Transaction history
+                  </h3>
+                </div>
+
+                {/* ONLY ONE ADD BUTTON */}
+
+                <button
+                  className="primary-button"
+                  onClick={
+                    openAddTransaction
+                  }
+                >
+                  <Plus size={18} />
+                  Add Transaction
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="loading-state">
+                  Loading transactions...
+                </div>
+              ) : selectedTransactions.length ===
+                0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <Receipt size={30} />
+                  </div>
+
+                  <h3>
+                    No transactions yet
+                  </h3>
+
+                  <p>
+                    Add your first transaction
+                    for this month.
+                  </p>
+
+                  <button
+                    className="primary-button"
+                    onClick={
+                      openAddTransaction
+                    }
+                  >
+                    <Plus size={18} />
+                    Add Transaction
+                  </button>
+                </div>
+              ) : (
+                <div className="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Transaction</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {selectedTransactions.map(
+                        (transaction) => (
+                          <tr
+                            key={
+                              transaction._id
+                            }
+                          >
+                            <td>
+                              <div className="table-title">
+                                <div className="mini-icon">
+                                  <Receipt
+                                    size={15}
+                                  />
+                                </div>
+
+                                <div>
+                                  <strong>
+                                    {
+                                      transaction.title
+                                    }
+                                  </strong>
+
+                                  {transaction.note && (
+                                    <span>
+                                      {
+                                        transaction.note
+                                      }
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            <td>
+                              <span className="category-pill">
+                                {
+                                  transaction.category
+                                }
+                              </span>
+                            </td>
+
+                            <td>
+                              {new Date(
+                                transaction.date
+                              ).toLocaleDateString(
+                                "en-IN"
+                              )}
+                            </td>
+
+                            <td>
+                              <span
+                                className={`type-badge ${transaction.type}`}
+                              >
+                                {
+                                  transaction.type
+                                }
+                              </span>
+                            </td>
+
+                            <td>
+                              <strong
+                                className={
+                                  transaction.type ===
+                                  "income"
+                                    ? "amount-positive"
+                                    : "amount-negative"
+                                }
+                              >
+                                {transaction.type ===
+                                "income"
+                                  ? "+"
+                                  : "−"}
+                                ₹
+                                {Number(
+                                  transaction.amount
+                                ).toLocaleString(
+                                  "en-IN"
+                                )}
+                              </strong>
+                            </td>
+
+                            <td>
+                              <div className="row-actions">
+                                <button
+                                  className="icon-button"
+                                  onClick={() =>
+                                    openEditTransaction(
+                                      transaction
+                                    )
+                                  }
+                                >
+                                  <Pencil
+                                    size={16}
+                                  />
+                                </button>
+
+                                <button
+                                  className="icon-button danger"
+                                  onClick={() =>
+                                    handleDelete(
+                                      transaction._id
+                                    )
+                                  }
+                                >
+                                  <Trash2
+                                    size={16}
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+            </section>
+          </div>
+        )}
+
+        {/* INSIGHTS */}
+
+        {activePage === "insights" && (
+          <div className="page-container">
+            <AllInsights
+              transactions={
+                transactions
+              }
+              selectedMonth={
+                selectedMonth
+              }
+              selectedYear={
+                selectedYear
+              }
+              budget={budget}
+            />
+          </div>
+        )}
+
+      </main>
+
+      {/* TRANSACTION MODAL */}
+
+      {showTransactionModal && (
+        <div
+          className="modal-overlay"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closeTransactionModal();
+            }
+          }}
+        >
+          <div className="modal">
+
+            <div className="modal-header">
+              <div>
+                <span className="section-label">
+                  TRANSACTION
+                </span>
+
+                <h2>
+                  {editingTransaction
+                    ? "Edit Transaction"
+                    : "Add Transaction"}
+                </h2>
+              </div>
+
+              <button
+                className="icon-button"
+                onClick={
+                  closeTransactionModal
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={
+                handleTransactionSubmit
+              }
+            >
+
               <div className="form-group">
-                <label htmlFor="transaction-date">
-                  Date
+                <label>
+                  Title
                 </label>
 
                 <input
-                  id="transaction-date"
-                  name="date"
-                  type="date"
-                  value={form.date}
-                  onChange={handleChange}
+                  name="title"
+                  value={
+                    transactionForm.title
+                  }
+                  onChange={
+                    handleFormChange
+                  }
+                  placeholder="e.g. Grocery shopping"
+                  autoComplete="off"
                 />
+              </div>
+
+              <div className="form-grid">
+
+                <div className="form-group">
+                  <label>
+                    Amount
+                  </label>
+
+                  <div className="input-with-icon">
+                    <IndianRupee
+                      size={17}
+                    />
+
+                    <input
+                      type="number"
+                      name="amount"
+                      value={
+                        transactionForm.amount
+                      }
+                      onChange={
+                        handleFormChange
+                      }
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    Type
+                  </label>
+
+                  <select
+                    name="type"
+                    value={
+                      transactionForm.type
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                  >
+                    <option value="expense">
+                      Expense
+                    </option>
+
+                    <option value="income">
+                      Income
+                    </option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div className="form-grid">
+
+                <div className="form-group">
+                  <label>
+                    Category
+                  </label>
+
+                  <select
+                    name="category"
+                    value={
+                      transactionForm.category
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                  >
+                    {categories.map(
+                      (category) => (
+                        <option
+                          key={category}
+                          value={category}
+                        >
+                          {category}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    Date
+                  </label>
+
+                  <input
+                    type="date"
+                    name="date"
+                    value={
+                      transactionForm.date
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                  />
+                </div>
+
+              </div>
+
+              <div className="form-group">
+                <label>
+                  Note
+                </label>
+
+                <textarea
+                  name="note"
+                  value={
+                    transactionForm.note
+                  }
+                  onChange={
+                    handleFormChange
+                  }
+                  placeholder="Add an optional note..."
+                  rows="3"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={
+                    closeTransactionModal
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                >
+                  <Save size={17} />
+
+                  {editingTransaction
+                    ? "Update Transaction"
+                    : "Save Transaction"}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* BUDGET MODAL */}
+
+      {showBudgetModal && (
+        <div
+          className="modal-overlay"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setShowBudgetModal(false);
+            }
+          }}
+        >
+          <div className="modal budget-modal">
+
+            <div className="modal-header">
+              <div>
+                <span className="section-label">
+                  MONTHLY BUDGET
+                </span>
+
+                <h2>
+                  Set your budget
+                </h2>
+              </div>
+
+              <button
+                className="icon-button"
+                onClick={() =>
+                  setShowBudgetModal(false)
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="budget-modal-period">
+              <CalendarDays size={20} />
+
+              <div>
+                <span>
+                  Budget period
+                </span>
+
+                <strong>
+                  {months[selectedMonth]}{" "}
+                  {selectedYear}
+                </strong>
               </div>
             </div>
 
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={closeModal}
-              >
-                Cancel
-              </button>
+            <form onSubmit={saveBudget}>
 
-              <button
-                type="submit"
-                className="primary-button"
-              >
-                {editingTransaction
-                  ? "Save Changes"
-                  : "Add Transaction"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
+              <div className="form-group">
+                <label>
+                  Monthly budget amount
+                </label>
 
-  /* =======================================================
-     APP LAYOUT
-  ======================================================= */
+                <div className="large-money-input">
+                  <span>₹</span>
 
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-logo">
-            <Icons.Wallet />
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={budgetInput}
+                    onChange={(event) =>
+                      setBudgetInput(
+                        event.target.value
+                      )
+                    }
+                    placeholder="Enter amount"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <p className="budget-helper">
+                Set how much you want to spend
+                during this month. You can
+                change it anytime.
+              </p>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() =>
+                    setShowBudgetModal(
+                      false
+                    )
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                >
+                  <Save size={17} />
+                  Save Budget
+                </button>
+              </div>
+
+            </form>
           </div>
-
-          <div className="brand-text">
-            <strong>SpendWise</strong>
-
-            <span>
-              Expense Manager
-            </span>
-          </div>
         </div>
+      )}
 
-        <nav className="navigation">
-          <button
-            type="button"
-            className={
-              activePage === "dashboard"
-                ? "nav-item active"
-                : "nav-item"
-            }
-            onClick={() =>
-              setActivePage("dashboard")
-            }
-          >
-            <Icons.Dashboard />
-            <span>Dashboard</span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              activePage === "transactions"
-                ? "nav-item active"
-                : "nav-item"
-            }
-            onClick={() =>
-              setActivePage("transactions")
-            }
-          >
-            <Icons.Transactions />
-            <span>Transactions</span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              activePage === "analytics"
-                ? "nav-item active"
-                : "nav-item"
-            }
-            onClick={() =>
-              setActivePage("analytics")
-            }
-          >
-            <Icons.Analytics />
-            <span>Analytics</span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              activePage === "ai"
-                ? "nav-item active ai-nav-item"
-                : "nav-item ai-nav-item"
-            }
-            onClick={() =>
-              setActivePage("ai")
-            }
-          >
-            <Icons.AI />
-            <span>AI Insights</span>
-            <small>NEW</small>
-          </button>
-        </nav>
-
-        <div className="sidebar-spacer" />
-
-        <div className="sidebar-budget">
-          <div className="sidebar-budget-top">
-            <span>Monthly Budget</span>
-            <Icons.Wallet />
-          </div>
-
-          <strong>
-            {formatCurrency(budget)}
-          </strong>
-
-          <div className="mini-progress">
-            <div
-              style={{
-                width: `${budgetPercentage}%`,
-              }}
-            />
-          </div>
-
-          <small>
-            {formatCurrency(expenses)} spent
-          </small>
-        </div>
-
-        <div className="sidebar-footer">
-          <span>SpendWise</span>
-          <span>Personal Finance</span>
-        </div>
-      </aside>
-
-      <main className="main-content">
-        {activePage === "dashboard" && (
-          <Dashboard />
-        )}
-
-        {activePage === "transactions" && (
-          <TransactionsPage />
-        )}
-
-        {activePage === "analytics" && (
-          <AnalyticsPage />
-        )}
-
-        {activePage === "ai" && (
-          <AIInsights
-            transactions={transactions}
-            budget={budget}
-          />
-        )}
-      </main>
-
-      <TransactionModal />
     </div>
   );
 }

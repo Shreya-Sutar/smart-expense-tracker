@@ -1,147 +1,208 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import {
+  WalletCards,
+  Eye,
+  EyeOff,
+  ArrowRight,
+} from "lucide-react";
 
-function Login({ onLogin, onRegister }) {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+const API_URL = "http://localhost:5000/api";
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+function Login({
+  onLogin,
+  onRegister,
+}) {
+  const [email, setEmail] =
+    useState("");
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const [password, setPassword] =
+    useState("");
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+  const [showPassword, setShowPassword] =
+    useState(false);
 
-    setError("");
-  };
+  const [loading, setLoading] =
+    useState(false);
 
-  const handleSubmit = (event) => {
+  const [error, setError] =
+    useState("");
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const email = form.email.trim().toLowerCase();
-    const password = form.password;
+    setError("");
 
     if (!email || !password) {
-      setError("Please enter your email and password.");
+      setError(
+        "Please enter your email and password."
+      );
+
       return;
     }
 
     try {
-      const users = JSON.parse(
-        localStorage.getItem("spendwise_users") || "[]"
+      setLoading(true);
+
+      const response = await fetch(
+        `${API_URL}/auth/login`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        }
       );
 
-      const user = users.find(
-        (item) =>
-          item.email.toLowerCase() === email &&
-          item.password === password
-      );
+      const data =
+        await response.json();
 
-      if (!user) {
-        setError("Invalid email or password.");
-        return;
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Login failed"
+        );
       }
 
-      localStorage.setItem(
-        "spendwise_current_user",
-        JSON.stringify(user)
-      );
-
-      onLogin(user);
-    } catch {
-      setError("Something went wrong. Please try again.");
+      onLogin(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-page">
-      <div className="auth-background-shape shape-one" />
-      <div className="auth-background-shape shape-two" />
+
+      <div className="auth-decoration one" />
+      <div className="auth-decoration two" />
 
       <div className="auth-card">
-        <div className="auth-brand">
-          <div className="auth-brand-icon">₹</div>
 
-          <div>
-            <h1>SpendWise</h1>
-            <p>Smart Expense Manager</p>
+        <div className="auth-brand">
+          <div className="auth-brand-icon">
+            <WalletCards size={25} />
           </div>
+
+          <h1>SpendWise</h1>
+
+          <p>
+            Smart Personal Expense Manager
+          </p>
         </div>
 
         <div className="auth-heading">
-          <span className="auth-eyebrow">WELCOME BACK</span>
-          <h2>Sign in to your account</h2>
+          <h2>
+            Welcome back
+          </h2>
+
           <p>
-            Track expenses, manage budgets and understand
-            your spending.
+            Sign in to continue managing
+            your finances.
           </p>
         </div>
 
         {error && (
-          <div className="form-alert error">
-            <span>⚠</span>
-            <p>{error}</p>
+          <div className="auth-error">
+            {error}
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="login-email">Email address</label>
+        <form
+          onSubmit={handleSubmit}
+          className="auth-form"
+        >
+          <div className="auth-field">
+            <label>
+              Email
+            </label>
 
             <input
-              id="login-email"
               type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(event) =>
+                setEmail(
+                  event.target.value
+                )
+              }
               placeholder="you@example.com"
               autoComplete="email"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="login-password">Password</label>
+          <div className="auth-field">
+            <label>
+              Password
+            </label>
 
-            <div className="password-wrapper">
+            <div className="password-field">
               <input
-                id="login-password"
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={form.password}
-                onChange={handleChange}
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                value={password}
+                onChange={(event) =>
+                  setPassword(
+                    event.target.value
+                  )
+                }
                 placeholder="Enter your password"
                 autoComplete="current-password"
               />
 
               <button
                 type="button"
-                className="password-toggle"
                 onClick={() =>
-                  setShowPassword((previous) => !previous)
+                  setShowPassword(
+                    !showPassword
+                  )
                 }
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? (
+                  <EyeOff size={17} />
+                ) : (
+                  <Eye size={17} />
+                )}
               </button>
             </div>
           </div>
 
-          <button type="submit" className="primary-button auth-button">
-            Sign In
+          <button
+            className="auth-submit"
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? "Signing in..."
+              : "Sign In"}
+
+            {!loading && (
+              <ArrowRight size={18} />
+            )}
           </button>
         </form>
 
         <div className="auth-switch">
-          <span>Don't have an account?</span>
+          <span>
+            Don't have an account?
+          </span>
 
-          <button type="button" onClick={onRegister}>
+          <button
+            onClick={onRegister}
+          >
             Create account
           </button>
         </div>
+
       </div>
     </div>
   );

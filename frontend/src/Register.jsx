@@ -1,238 +1,304 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import {
+  WalletCards,
+  Eye,
+  EyeOff,
+  ArrowRight,
+} from "lucide-react";
 
-function Register({ onLogin }) {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+const API_URL = "http://localhost:5000/api";
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
+function Register({
+  onRegister,
+  onLogin,
+}) {
+  const [name, setName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [
+    confirmPassword,
+    setConfirmPassword,
+  ] = useState("");
+
+  const [showPassword, setShowPassword] =
     useState(false);
 
-  const [error, setError] = useState("");
+  const [
+    showConfirmPassword,
+    setShowConfirmPassword,
+  ] = useState(false);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const [loading, setLoading] =
+    useState(false);
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+  const [error, setError] =
+    useState("");
 
-    setError("");
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const name = form.name.trim();
-    const email = form.email.trim().toLowerCase();
+    setError("");
 
     if (
       !name ||
       !email ||
-      !form.password ||
-      !form.confirmPassword
+      !password ||
+      !confirmPassword
     ) {
-      setError("Please fill in all fields.");
+      setError(
+        "Please fill in all fields."
+      );
+
       return;
     }
 
-    if (name.length < 2) {
-      setError("Please enter a valid name.");
+    if (password.length < 6) {
+      setError(
+        "Password must contain at least 6 characters."
+      );
+
       return;
     }
 
-    if (form.password.length < 6) {
-      setError("Password must contain at least 6 characters.");
-      return;
-    }
+    if (
+      password !== confirmPassword
+    ) {
+      setError(
+        "Passwords do not match."
+      );
 
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
       return;
     }
 
     try {
-      const users = JSON.parse(
-        localStorage.getItem("spendwise_users") || "[]"
+      setLoading(true);
+
+      const response = await fetch(
+        `${API_URL}/auth/register`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+          }),
+        }
       );
 
-      const existingUser = users.find(
-        (user) => user.email.toLowerCase() === email
-      );
+      const data =
+        await response.json();
 
-      if (existingUser) {
-        setError("An account with this email already exists.");
-        return;
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Registration failed"
+        );
       }
 
-      const newUser = {
-        id: Date.now(),
-        name,
-        email,
-        password: form.password,
-      };
-
-      const updatedUsers = [...users, newUser];
-
-      localStorage.setItem(
-        "spendwise_users",
-        JSON.stringify(updatedUsers)
-      );
-
-      localStorage.setItem(
-        "spendwise_current_user",
-        JSON.stringify(newUser)
-      );
-
-      onLogin(newUser);
-    } catch {
-      setError("Unable to create account. Please try again.");
+      onRegister(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-page">
-      <div className="auth-background-shape shape-one" />
-      <div className="auth-background-shape shape-two" />
+
+      <div className="auth-decoration one" />
+      <div className="auth-decoration two" />
 
       <div className="auth-card register-card">
-        <div className="auth-brand">
-          <div className="auth-brand-icon">₹</div>
 
-          <div>
-            <h1>SpendWise</h1>
-            <p>Smart Expense Manager</p>
+        <div className="auth-brand">
+          <div className="auth-brand-icon">
+            <WalletCards size={25} />
           </div>
+
+          <h1>SpendWise</h1>
+
+          <p>
+            Smart Personal Expense Manager
+          </p>
         </div>
 
         <div className="auth-heading">
-          <span className="auth-eyebrow">GET STARTED</span>
-          <h2>Create your account</h2>
+          <h2>
+            Create your account
+          </h2>
+
           <p>
-            Start managing your money smarter today.
+            Start tracking your money
+            smarter today.
           </p>
         </div>
 
         {error && (
-          <div className="form-alert error">
-            <span>⚠</span>
-            <p>{error}</p>
+          <div className="auth-error">
+            {error}
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="register-name">Full name</label>
+        <form
+          onSubmit={handleSubmit}
+          className="auth-form"
+        >
+          <div className="auth-field">
+            <label>
+              Full Name
+            </label>
 
             <input
-              id="register-name"
               type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Enter your full name"
+              value={name}
+              onChange={(event) =>
+                setName(
+                  event.target.value
+                )
+              }
+              placeholder="Your name"
               autoComplete="name"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-email">
-              Email address
+          <div className="auth-field">
+            <label>
+              Email
             </label>
 
             <input
-              id="register-email"
               type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(event) =>
+                setEmail(
+                  event.target.value
+                )
+              }
               placeholder="you@example.com"
               autoComplete="email"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-password">
+          <div className="auth-field">
+            <label>
               Password
             </label>
 
-            <div className="password-wrapper">
+            <div className="password-field">
               <input
-                id="register-password"
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={form.password}
-                onChange={handleChange}
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                value={password}
+                onChange={(event) =>
+                  setPassword(
+                    event.target.value
+                  )
+                }
                 placeholder="Minimum 6 characters"
                 autoComplete="new-password"
               />
 
               <button
                 type="button"
-                className="password-toggle"
                 onClick={() =>
-                  setShowPassword((previous) => !previous)
+                  setShowPassword(
+                    !showPassword
+                  )
                 }
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? (
+                  <EyeOff size={17} />
+                ) : (
+                  <Eye size={17} />
+                )}
               </button>
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-confirm-password">
-              Confirm password
+          <div className="auth-field">
+            <label>
+              Confirm Password
             </label>
 
-            <div className="password-wrapper">
+            <div className="password-field">
               <input
-                id="register-confirm-password"
                 type={
                   showConfirmPassword
                     ? "text"
                     : "password"
                 }
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
+                value={
+                  confirmPassword
+                }
+                onChange={(event) =>
+                  setConfirmPassword(
+                    event.target.value
+                  )
+                }
                 placeholder="Repeat your password"
                 autoComplete="new-password"
               />
 
               <button
                 type="button"
-                className="password-toggle"
                 onClick={() =>
                   setShowConfirmPassword(
-                    (previous) => !previous
+                    !showConfirmPassword
                   )
                 }
               >
-                {showConfirmPassword ? "Hide" : "Show"}
+                {showConfirmPassword ? (
+                  <EyeOff size={17} />
+                ) : (
+                  <Eye size={17} />
+                )}
               </button>
             </div>
           </div>
 
           <button
+            className="auth-submit"
             type="submit"
-            className="primary-button auth-button"
+            disabled={loading}
           >
-            Create Account
+            {loading
+              ? "Creating account..."
+              : "Create Account"}
+
+            {!loading && (
+              <ArrowRight size={18} />
+            )}
           </button>
         </form>
 
         <div className="auth-switch">
-          <span>Already have an account?</span>
+          <span>
+            Already have an account?
+          </span>
 
-          <button type="button" onClick={onLogin}>
+          <button
+            onClick={onLogin}
+          >
             Sign in
           </button>
         </div>
+
       </div>
     </div>
   );
