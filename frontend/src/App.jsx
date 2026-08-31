@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-
 import {
   BarChart,
   Bar,
@@ -16,9 +15,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-import Login from "./Login.jsx";
-import Register from "./Register.jsx";
-
 import "./App.css";
 
 /* =========================================================
@@ -27,7 +23,7 @@ import "./App.css";
 
 const Icons = {
   Dashboard: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -36,14 +32,14 @@ const Icons = {
   ),
 
   Transactions: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <rect x="4" y="3" width="16" height="18" rx="2" />
       <path d="M8 8h8M8 12h8M8 16h5" />
     </svg>
   ),
 
   Analytics: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M4 19V5" />
       <path d="M4 19h16" />
       <path d="M7 16v-5" />
@@ -53,7 +49,7 @@ const Icons = {
   ),
 
   Wallet: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M3 7h18v12H3z" />
       <path d="M3 7V5a2 2 0 0 1 2-2h14" />
       <path d="M16 13h5" />
@@ -62,20 +58,20 @@ const Icons = {
   ),
 
   Plus: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M12 5v14M5 12h14" />
     </svg>
   ),
 
   Edit: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
     </svg>
   ),
 
   Trash: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M3 6h18" />
       <path d="M8 6V4h8v2" />
       <path d="M19 6l-1 15H6L5 6" />
@@ -84,37 +80,57 @@ const Icons = {
   ),
 
   Search: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-4-4" />
     </svg>
   ),
 
   Close: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   ),
 
   ArrowUp: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M12 19V5" />
       <path d="m6 11 6-6 6 6" />
     </svg>
   ),
 
   ArrowDown: () => (
-    <svg viewBox="0 0 24 24" className="icon">
+    <svg viewBox="0 0 24 24">
       <path d="M12 5v14" />
       <path d="m18 13-6 6-6-6" />
     </svg>
   ),
 
-  Logout: () => (
-    <svg viewBox="0 0 24 24" className="icon">
-      <path d="M10 17l5-5-5-5" />
-      <path d="M15 12H3" />
-      <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
+  Sparkles: () => (
+    <svg viewBox="0 0 24 24">
+      <path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3Z" />
+      <path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z" />
+    </svg>
+  ),
+
+  Lightbulb: () => (
+    <svg viewBox="0 0 24 24">
+      <path d="M9 18h6" />
+      <path d="M10 21h4" />
+      <path d="M8.5 14.5C7.5 13.5 7 12.3 7 11a5 5 0 1 1 10 0c0 1.3-.5 2.5-1.5 3.5-.7.7-1.5 1.3-1.5 2.5h-4c0-1.2-.8-1.8-1.5-2.5Z" />
+    </svg>
+  ),
+
+  Alert: () => (
+    <svg viewBox="0 0 24 24">
+      <path d="M12 3 2 21h20L12 3Z" />
+      <path d="M12 9v5M12 18h.01" />
+    </svg>
+  ),
+
+  Check: () => (
+    <svg viewBox="0 0 24 24">
+      <path d="m5 12 4 4L19 6" />
     </svg>
   ),
 };
@@ -215,20 +231,16 @@ const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
 const formatDate = (date) =>
-  new Date(`${date}T00:00:00`).toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
+  new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 
 function playSound(type = "success") {
   try {
     const AudioContext =
-      window.AudioContext ||
-      window.webkitAudioContext;
+      window.AudioContext || window.webkitAudioContext;
 
     if (!AudioContext) return;
 
@@ -244,10 +256,7 @@ function playSound(type = "success") {
 
     oscillator.type = "sine";
 
-    gain.gain.setValueAtTime(
-      0.05,
-      context.currentTime
-    );
+    gain.gain.setValueAtTime(0.06, context.currentTime);
 
     gain.gain.exponentialRampToValueAtTime(
       0.001,
@@ -257,7 +266,7 @@ function playSound(type = "success") {
     oscillator.start();
     oscillator.stop(context.currentTime + 0.15);
   } catch {
-    // Optional sound.
+    // Optional audio.
   }
 }
 
@@ -268,35 +277,16 @@ function playSound(type = "success") {
 function App() {
   const today = new Date();
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem(
-          "spendwise_current_user"
-        ) || "null"
-      );
-    } catch {
-      return null;
-    }
-  });
-
-  const [authMode, setAuthMode] =
-    useState("login");
-
-  const [activePage, setActivePage] =
-    useState("dashboard");
+  const [activePage, setActivePage] = useState("dashboard");
 
   const [transactions, setTransactions] =
     useState(initialTransactions);
 
-  const [budget, setBudget] =
-    useState(10000);
+  const [budget, setBudget] = useState(10000);
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
-  const [showModal, setShowModal] =
-    useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const [editingTransaction, setEditingTransaction] =
     useState(null);
@@ -310,6 +300,8 @@ function App() {
   const [analysisMode, setAnalysisMode] =
     useState("monthly");
 
+  const [aiVisible, setAiVisible] = useState(true);
+
   const [form, setForm] = useState({
     title: "",
     amount: "",
@@ -317,42 +309,6 @@ function App() {
     type: "expense",
     date: today.toISOString().split("T")[0],
   });
-
-  /* =======================================================
-     AUTH
-  ======================================================= */
-
-  const handleLogin = (user) => {
-    setCurrentUser(user);
-    setAuthMode("login");
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem(
-      "spendwise_current_user"
-    );
-
-    setCurrentUser(null);
-    setActivePage("dashboard");
-  };
-
-  if (!currentUser) {
-    if (authMode === "register") {
-      return (
-        <Register
-          onLogin={() => setAuthMode("login")}
-          onRegister={() => setAuthMode("register")}
-        />
-      );
-    }
-
-    return (
-      <Login
-        onLogin={handleLogin}
-        onRegister={() => setAuthMode("register")}
-      />
-    );
-  }
 
   /* =======================================================
      AVAILABLE YEARS
@@ -373,9 +329,7 @@ function App() {
     years.add(today.getFullYear() - 1);
     years.add(today.getFullYear() + 1);
 
-    return Array.from(years).sort(
-      (a, b) => b - a
-    );
+    return Array.from(years).sort((a, b) => b - a);
   }, [transactions]);
 
   /* =======================================================
@@ -388,9 +342,7 @@ function App() {
         `${transaction.date}T00:00:00`
       );
 
-      if (
-        date.getFullYear() !== selectedYear
-      ) {
+      if (date.getFullYear() !== selectedYear) {
         return false;
       }
 
@@ -411,32 +363,27 @@ function App() {
      TOTALS
   ======================================================= */
 
-  const income = useMemo(() => {
-    return selectedTransactions
-      .filter((t) => t.type === "income")
-      .reduce(
-        (sum, t) => sum + Number(t.amount),
-        0
-      );
-  }, [selectedTransactions]);
+  const income = useMemo(
+    () =>
+      selectedTransactions
+        .filter((t) => t.type === "income")
+        .reduce((sum, t) => sum + Number(t.amount), 0),
+    [selectedTransactions]
+  );
 
-  const expenses = useMemo(() => {
-    return selectedTransactions
-      .filter((t) => t.type === "expense")
-      .reduce(
-        (sum, t) => sum + Number(t.amount),
-        0
-      );
-  }, [selectedTransactions]);
+  const expenses = useMemo(
+    () =>
+      selectedTransactions
+        .filter((t) => t.type === "expense")
+        .reduce((sum, t) => sum + Number(t.amount), 0),
+    [selectedTransactions]
+  );
 
   const balance = income - expenses;
 
   const budgetPercentage =
     budget > 0
-      ? Math.min(
-          (expenses / budget) * 100,
-          100
-        )
+      ? Math.min((expenses / budget) * 100, 100)
       : 0;
 
   /* =======================================================
@@ -444,9 +391,7 @@ function App() {
   ======================================================= */
 
   const filteredTransactions = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+    const query = search.trim().toLowerCase();
 
     return [...selectedTransactions]
       .filter((transaction) => {
@@ -458,17 +403,10 @@ function App() {
       })
       .sort(
         (a, b) =>
-          new Date(
-            `${b.date}T00:00:00`
-          ) -
-          new Date(
-            `${a.date}T00:00:00`
-          )
+          new Date(`${b.date}T00:00:00`) -
+          new Date(`${a.date}T00:00:00`)
       );
-  }, [
-    selectedTransactions,
-    search,
-  ]);
+  }, [selectedTransactions, search]);
 
   /* =======================================================
      MONTHLY DATA
@@ -488,16 +426,10 @@ function App() {
           date.getFullYear() === selectedYear &&
           date.getMonth() === index
         ) {
-          if (
-            transaction.type === "expense"
-          ) {
-            expense += Number(
-              transaction.amount
-            );
+          if (transaction.type === "expense") {
+            expense += Number(transaction.amount);
           } else {
-            incomeAmount += Number(
-              transaction.amount
-            );
+            incomeAmount += Number(transaction.amount);
           }
         }
       });
@@ -518,22 +450,17 @@ function App() {
     const map = {};
 
     selectedTransactions
-      .filter(
-        (transaction) =>
-          transaction.type === "expense"
-      )
+      .filter((transaction) => transaction.type === "expense")
       .forEach((transaction) => {
         map[transaction.category] =
           (map[transaction.category] || 0) +
           Number(transaction.amount);
       });
 
-    return Object.entries(map).map(
-      ([name, value]) => ({
-        name,
-        value,
-      })
-    );
+    return Object.entries(map).map(([name, value]) => ({
+      name,
+      value,
+    }));
   }, [selectedTransactions]);
 
   /* =======================================================
@@ -541,27 +468,17 @@ function App() {
   ======================================================= */
 
   const trendData = useMemo(() => {
-    const sorted = [
-      ...selectedTransactions,
-    ].sort(
+    const sorted = [...selectedTransactions].sort(
       (a, b) =>
-        new Date(
-          `${a.date}T00:00:00`
-        ) -
-        new Date(
-          `${b.date}T00:00:00`
-        )
+        new Date(`${a.date}T00:00:00`) -
+        new Date(`${b.date}T00:00:00`)
     );
 
     let runningTotal = 0;
 
     return sorted.map((transaction) => {
-      if (
-        transaction.type === "expense"
-      ) {
-        runningTotal += Number(
-          transaction.amount
-        );
+      if (transaction.type === "expense") {
+        runningTotal += Number(transaction.amount);
       }
 
       return {
@@ -581,90 +498,74 @@ function App() {
   ======================================================= */
 
   const yearlyAnalysis = useMemo(() => {
-    const yearlyTransactions =
-      transactions.filter((transaction) => {
+    const yearlyTransactions = transactions.filter(
+      (transaction) => {
         const date = new Date(
           `${transaction.date}T00:00:00`
         );
 
-        return (
-          date.getFullYear() === selectedYear
-        );
-      });
+        return date.getFullYear() === selectedYear;
+      }
+    );
 
     let yearlyIncome = 0;
     let yearlyExpenses = 0;
 
-    yearlyTransactions.forEach(
-      (transaction) => {
-        if (
-          transaction.type === "income"
-        ) {
-          yearlyIncome += Number(
-            transaction.amount
-          );
-        } else {
-          yearlyExpenses += Number(
-            transaction.amount
-          );
-        }
+    yearlyTransactions.forEach((transaction) => {
+      if (transaction.type === "income") {
+        yearlyIncome += Number(transaction.amount);
+      } else {
+        yearlyExpenses += Number(transaction.amount);
       }
-    );
+    });
 
     const monthlyExpenses = months.map(
       (month, index) => {
-        const value =
-          yearlyTransactions
-            .filter((transaction) => {
-              const date = new Date(
-                `${transaction.date}T00:00:00`
-              );
-
-              return (
-                date.getMonth() === index &&
-                transaction.type ===
-                  "expense"
-              );
-            })
-            .reduce(
-              (sum, transaction) =>
-                sum +
-                Number(transaction.amount),
-              0
+        const value = yearlyTransactions
+          .filter((transaction) => {
+            const date = new Date(
+              `${transaction.date}T00:00:00`
             );
+
+            return (
+              date.getMonth() === index &&
+              transaction.type === "expense"
+            );
+          })
+          .reduce(
+            (sum, transaction) =>
+              sum + Number(transaction.amount),
+            0
+          );
 
         return {
           month,
-          shortMonth:
-            month.substring(0, 3),
+          shortMonth: month.substring(0, 3),
           value,
         };
       }
     );
 
-    const highestMonth =
-      monthlyExpenses.reduce(
-        (highest, current) =>
-          current.value > highest.value
-            ? current
-            : highest,
-        {
-          month: "None",
-          value: 0,
-        }
-      );
+    const highestMonth = monthlyExpenses.reduce(
+      (highest, current) =>
+        current.value > highest.value
+          ? current
+          : highest,
+      {
+        month: "None",
+        value: 0,
+      }
+    );
 
-    const monthsWithData =
-      monthlyExpenses.filter(
-        (item) => item.value > 0
-      );
+    const monthsWithData = monthlyExpenses.filter(
+      (item) => item.value > 0
+    );
 
     const lowestMonth =
       monthsWithData.length > 0
         ? monthsWithData.reduce(
             (lowest, current) =>
-              current.value <
-              lowest.value
+              current.value < lowest.value
                 ? current
                 : lowest
           )
@@ -681,31 +582,23 @@ function App() {
           transaction.type === "expense"
       )
       .forEach((transaction) => {
-        categoryMap[
-          transaction.category
-        ] =
-          (categoryMap[
-            transaction.category
-          ] || 0) +
+        categoryMap[transaction.category] =
+          (categoryMap[transaction.category] || 0) +
           Number(transaction.amount);
       });
 
-    const highestCategory =
-      Object.entries(
-        categoryMap
-      ).reduce(
-        (highest, [category, value]) =>
-          value > highest.value
-            ? {
-                category,
-                value,
-              }
-            : highest,
-        {
-          category: "None",
-          value: 0,
-        }
-      );
+    const highestCategory = Object.entries(
+      categoryMap
+    ).reduce(
+      (highest, [category, value]) =>
+        value > highest.value
+          ? { category, value }
+          : highest,
+      {
+        category: "None",
+        value: 0,
+      }
+    );
 
     return {
       yearlyIncome,
@@ -720,7 +613,132 @@ function App() {
   }, [transactions, selectedYear]);
 
   /* =======================================================
-     MODAL
+     AI SPENDING INSIGHTS
+  ======================================================= */
+
+  const aiInsights = useMemo(() => {
+    if (selectedTransactions.length === 0) {
+      return {
+        summary:
+          "There is not enough transaction data yet. Add a few transactions and SpendWise will analyze your spending.",
+        category:
+          "No spending category is available yet.",
+        recommendation:
+          "Start by recording your daily expenses so your financial pattern can be analyzed.",
+        status: "neutral",
+        score: 0,
+      };
+    }
+
+    const expenseTransactions =
+      selectedTransactions.filter(
+        (t) => t.type === "expense"
+      );
+
+    if (expenseTransactions.length === 0) {
+      return {
+        summary:
+          "Great start! You have recorded income but no expenses for this period.",
+        category:
+          "No expense category is dominating your spending.",
+        recommendation:
+          "Continue tracking every expense to build a reliable spending pattern.",
+        status: "positive",
+        score: 90,
+      };
+    }
+
+    const categoryTotals = {};
+
+    expenseTransactions.forEach((transaction) => {
+      categoryTotals[transaction.category] =
+        (categoryTotals[transaction.category] || 0) +
+        Number(transaction.amount);
+    });
+
+    const sortedCategories = Object.entries(
+      categoryTotals
+    ).sort((a, b) => b[1] - a[1]);
+
+    const topCategory = sortedCategories[0];
+
+    const expenseRatio =
+      income > 0 ? expenses / income : 1;
+
+    const averageExpense =
+      expenses / expenseTransactions.length;
+
+    let status = "positive";
+    let score = 85;
+
+    if (budget > 0 && expenses > budget) {
+      status = "danger";
+      score = 45;
+    } else if (expenseRatio > 0.8) {
+      status = "warning";
+      score = 60;
+    } else if (expenseRatio > 0.6) {
+      status = "warning";
+      score = 72;
+    }
+
+    let summary;
+
+    if (budget > 0 && expenses > budget) {
+      summary = `Your spending is ${formatCurrency(
+        expenses - budget
+      )} above your budget. Consider reducing non-essential expenses.`;
+    } else if (income > 0 && expenseRatio < 0.5) {
+      summary = `Your expenses are using only ${Math.round(
+        expenseRatio * 100
+      )}% of your income. Your current spending pattern looks healthy.`;
+    } else if (income > 0) {
+      summary = `You have spent ${Math.round(
+        expenseRatio * 100
+      )}% of your income in this period. Keep an eye on discretionary spending.`;
+    } else {
+      summary = `You have spent ${formatCurrency(
+        expenses
+      )} during this period. Add income information for a more complete analysis.`;
+    }
+
+    const category = `${topCategory[0]} is your highest spending category at ${formatCurrency(
+      topCategory[1]
+    )}.`;
+
+    let recommendation;
+
+    if (budget > 0 && expenses > budget) {
+      recommendation = `Try reducing spending in ${topCategory[0]} first. Your average recorded expense is ${formatCurrency(
+        averageExpense
+      )}.`;
+    } else if (topCategory[1] > expenses * 0.4) {
+      recommendation = `${topCategory[0]} represents a large part of your spending. Setting a smaller limit for this category could improve your savings.`;
+    } else if (income > expenses) {
+      recommendation = `You currently have ${formatCurrency(
+        income - expenses
+      )} left after expenses. Consider saving part of it before making additional purchases.`;
+    } else {
+      recommendation =
+        "Track your expenses consistently and review your highest spending category each week.";
+    }
+
+    return {
+      summary,
+      category,
+      recommendation,
+      status,
+      score,
+    };
+  }, [
+    selectedTransactions,
+    income,
+    expenses,
+    budget,
+  ]);
+
+  /* =======================================================
+     MODAL FUNCTIONS
   ======================================================= */
 
   const openAddModal = () => {
@@ -731,9 +749,7 @@ function App() {
       amount: "",
       category: "Food",
       type: "expense",
-      date: today
-        .toISOString()
-        .split("T")[0],
+      date: today.toISOString().split("T")[0],
     });
 
     setShowModal(true);
@@ -784,8 +800,8 @@ function App() {
         value === "income"
           ? "Income"
           : previous.category === "Income"
-            ? "Food"
-            : previous.category,
+          ? "Food"
+          : previous.category,
     }));
   };
 
@@ -813,8 +829,7 @@ function App() {
     if (editingTransaction) {
       setTransactions((previous) =>
         previous.map((transaction) =>
-          transaction.id ===
-          editingTransaction.id
+          transaction.id === editingTransaction.id
             ? {
                 ...transaction,
                 title,
@@ -850,9 +865,7 @@ function App() {
 
     const newExpenseTotal =
       expenses +
-      (form.type === "expense"
-        ? amount
-        : 0);
+      (form.type === "expense" ? amount : 0);
 
     setTransactions((previous) => [
       newTransaction,
@@ -860,7 +873,6 @@ function App() {
     ]);
 
     playSound("success");
-    closeModal();
 
     if (
       form.type === "expense" &&
@@ -876,6 +888,8 @@ function App() {
         );
       }, 200);
     }
+
+    closeModal();
   };
 
   /* =======================================================
@@ -927,10 +941,7 @@ function App() {
           }
         >
           {availableYears.map((year) => (
-            <option
-              value={year}
-              key={year}
-            >
+            <option value={year} key={year}>
               {year}
             </option>
           ))}
@@ -944,13 +955,11 @@ function App() {
           }
           onChange={(event) => {
             if (
-              event.target.value ===
-              "yearly"
+              event.target.value === "yearly"
             ) {
               setAnalysisMode("yearly");
             } else {
               setAnalysisMode("monthly");
-
               setSelectedMonth(
                 Number(event.target.value)
               );
@@ -1003,15 +1012,160 @@ function App() {
   );
 
   /* =======================================================
+     AI INSIGHTS COMPONENT
+  ======================================================= */
+
+  const AIInsights = () => {
+    if (!aiVisible) return null;
+
+    return (
+      <section className="ai-insights-card">
+        <div className="ai-header">
+          <div className="ai-title-wrapper">
+            <div className="ai-icon">
+              <Icons.Sparkles />
+            </div>
+
+            <div>
+              <span className="ai-label">
+                AI FINANCIAL ASSISTANT
+              </span>
+
+              <h2>
+                Smart Spending Insights
+              </h2>
+
+              <p>
+                Personalized analysis based on
+                your transaction history.
+              </p>
+            </div>
+          </div>
+
+          <button
+            className="ai-close"
+            onClick={() =>
+              setAiVisible(false)
+            }
+            title="Hide AI insights"
+          >
+            <Icons.Close />
+          </button>
+        </div>
+
+        <div className="ai-score-row">
+          <div className="ai-score">
+            <div className="score-circle">
+              <strong>
+                {aiInsights.score}
+              </strong>
+
+              <span>/100</span>
+            </div>
+
+            <div>
+              <strong>
+                Financial Health
+              </strong>
+
+              <small>
+                Based on current spending
+              </small>
+            </div>
+          </div>
+
+          <div
+            className={`ai-status ${aiInsights.status}`}
+          >
+            {aiInsights.status ===
+              "danger" && (
+              <Icons.Alert />
+            )}
+
+            {aiInsights.status ===
+              "warning" && (
+              <Icons.Alert />
+            )}
+
+            {aiInsights.status ===
+              "positive" && (
+              <Icons.Check />
+            )}
+
+            {aiInsights.status ===
+              "neutral" && (
+              <Icons.Lightbulb />
+            )}
+
+            <span>
+              {aiInsights.status ===
+              "danger"
+                ? "Needs attention"
+                : aiInsights.status ===
+                  "warning"
+                ? "Watch your spending"
+                : aiInsights.status ===
+                  "positive"
+                ? "Looking healthy"
+                : "Building insights"}
+            </span>
+          </div>
+        </div>
+
+        <div className="ai-grid">
+          <div className="ai-insight">
+            <div className="ai-insight-icon">
+              <Icons.Sparkles />
+            </div>
+
+            <div>
+              <span>SUMMARY</span>
+
+              <p>
+                {aiInsights.summary}
+              </p>
+            </div>
+          </div>
+
+          <div className="ai-insight">
+            <div className="ai-insight-icon">
+              <Icons.Wallet />
+            </div>
+
+            <div>
+              <span>SPENDING PATTERN</span>
+
+              <p>
+                {aiInsights.category}
+              </p>
+            </div>
+          </div>
+
+          <div className="ai-insight recommendation">
+            <div className="ai-insight-icon">
+              <Icons.Lightbulb />
+            </div>
+
+            <div>
+              <span>RECOMMENDATION</span>
+
+              <p>
+                {aiInsights.recommendation}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  /* =======================================================
      TRANSACTION LIST
   ======================================================= */
 
   const TransactionList = ({ limit }) => {
     const list = limit
-      ? filteredTransactions.slice(
-          0,
-          limit
-        )
+      ? filteredTransactions.slice(0, limit)
       : filteredTransactions;
 
     if (list.length === 0) {
@@ -1069,9 +1223,11 @@ function App() {
             <div
               className={`transaction-amount ${transaction.type}`}
             >
-              {transaction.type === "income"
+              {transaction.type ===
+              "income"
                 ? "+"
                 : "-"}
+
               {formatCurrency(
                 transaction.amount
               )}
@@ -1080,9 +1236,7 @@ function App() {
             <div className="transaction-actions">
               <button
                 onClick={() =>
-                  openEditModal(
-                    transaction
-                  )
+                  openEditModal(transaction)
                 }
                 title="Edit transaction"
               >
@@ -1140,7 +1294,7 @@ function App() {
     <>
       <PageHeader
         eyebrow="OVERVIEW"
-        title={`Good day, ${currentUser.name.split(" ")[0]} 👋`}
+        title="Dashboard"
         description="Track your money and understand your spending."
         action={
           <button
@@ -1208,6 +1362,8 @@ function App() {
         />
       </div>
 
+      <AIInsights />
+
       <div className="dashboard-grid">
         <div className="panel chart-panel">
           <div className="panel-header">
@@ -1217,7 +1373,8 @@ function App() {
               </span>
 
               <h3>
-                {analysisMode === "yearly"
+                {analysisMode ===
+                "yearly"
                   ? `${selectedYear} Monthly Spending`
                   : "Monthly Spending"}
               </h3>
@@ -1236,6 +1393,12 @@ function App() {
             >
               <BarChart
                 data={monthlyData}
+                margin={{
+                  top: 10,
+                  right: 10,
+                  left: 0,
+                  bottom: 0,
+                }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1382,7 +1545,8 @@ function App() {
 
             <p>
               Latest activity for{" "}
-              {analysisMode === "yearly"
+              {analysisMode ===
+              "yearly"
                 ? selectedYear
                 : `${months[selectedMonth]} ${selectedYear}`}
             </p>
@@ -1406,7 +1570,7 @@ function App() {
   );
 
   /* =======================================================
-     TRANSACTIONS
+     TRANSACTIONS PAGE
   ======================================================= */
 
   const TransactionsPage = () => (
@@ -1459,7 +1623,7 @@ function App() {
   );
 
   /* =======================================================
-     ANALYTICS
+     ANALYTICS PAGE
   ======================================================= */
 
   const AnalyticsPage = () => {
@@ -1486,9 +1650,7 @@ function App() {
           <>
             <div className="analytics-stats">
               <div className="analytics-mini-card">
-                <span>
-                  Yearly Income
-                </span>
+                <span>Yearly Income</span>
 
                 <strong>
                   {formatCurrency(
@@ -1498,9 +1660,7 @@ function App() {
               </div>
 
               <div className="analytics-mini-card">
-                <span>
-                  Yearly Expenses
-                </span>
+                <span>Yearly Expenses</span>
 
                 <strong>
                   {formatCurrency(
@@ -1510,9 +1670,7 @@ function App() {
               </div>
 
               <div className="analytics-mini-card">
-                <span>
-                  Yearly Savings
-                </span>
+                <span>Yearly Savings</span>
 
                 <strong>
                   {formatCurrency(
@@ -1522,9 +1680,7 @@ function App() {
               </div>
 
               <div className="analytics-mini-card">
-                <span>
-                  Savings Rate
-                </span>
+                <span>Savings Rate</span>
 
                 <strong>
                   {savingsRate}%
@@ -1600,9 +1756,7 @@ function App() {
               </div>
 
               <div className="yearly-summary-card">
-                <span>
-                  Savings Rate
-                </span>
+                <span>Savings Rate</span>
 
                 <strong>
                   {savingsRate}%
@@ -1731,24 +1885,14 @@ function App() {
                     dataKey="income"
                     name="Income"
                     fill="#10b981"
-                    radius={[
-                      8,
-                      8,
-                      0,
-                      0,
-                    ]}
+                    radius={[8, 8, 0, 0]}
                   />
 
                   <Bar
                     dataKey="expense"
                     name="Expense"
                     fill="#ef4444"
-                    radius={[
-                      8,
-                      8,
-                      0,
-                      0,
-                    ]}
+                    radius={[8, 8, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -1767,8 +1911,7 @@ function App() {
                 </h3>
 
                 <p>
-                  Where your money is
-                  going
+                  Where your money is going
                 </p>
               </div>
             </div>
@@ -1986,7 +2129,7 @@ function App() {
   };
 
   /* =======================================================
-     MODAL
+     TRANSACTION MODAL
   ======================================================= */
 
   const TransactionModal = () => {
@@ -2092,7 +2235,9 @@ function App() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Category</label>
+                <label>
+                  Category
+                </label>
 
                 <select
                   name="category"
@@ -2185,7 +2330,8 @@ function App() {
         <nav className="navigation">
           <button
             className={
-              activePage === "dashboard"
+              activePage ===
+              "dashboard"
                 ? "nav-item active"
                 : "nav-item"
             }
@@ -2263,50 +2409,25 @@ function App() {
           </small>
         </div>
 
-        <div className="sidebar-user">
-          <div className="sidebar-user-avatar">
-            {currentUser.name
-              .charAt(0)
-              .toUpperCase()}
-          </div>
-
-          <div className="sidebar-user-info">
-            <strong>
-              {currentUser.name}
-            </strong>
-
-            <span>
-              {currentUser.email}
-            </span>
-          </div>
-
-          <button
-            className="logout-button"
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <Icons.Logout />
-          </button>
-        </div>
-
         <div className="sidebar-footer">
           <span>SpendWise</span>
-          <span>
-            Personal Finance
-          </span>
+          <span>Personal Finance</span>
         </div>
       </aside>
 
       <main className="main-content">
-        {activePage === "dashboard" && (
+        {activePage ===
+          "dashboard" && (
           <Dashboard />
         )}
 
-        {activePage === "transactions" && (
+        {activePage ===
+          "transactions" && (
           <TransactionsPage />
         )}
 
-        {activePage === "analytics" && (
+        {activePage ===
+          "analytics" && (
           <AnalyticsPage />
         )}
       </main>
