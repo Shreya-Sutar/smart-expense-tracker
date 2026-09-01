@@ -18,6 +18,9 @@ import {
   Menu,
   IndianRupee,
   Sparkles,
+  Brain,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
 import Login from "./Login";
@@ -176,7 +179,7 @@ function App() {
   const [budgetSaving, setBudgetSaving] = useState(false);
 
   // =======================================================
-  // AI
+  // AI SPENDING INSIGHTS
   // =======================================================
 
   const [aiData, setAiData] = useState(null);
@@ -241,6 +244,7 @@ function App() {
     }
 
     localStorage.setItem("expense_token", data.token);
+
     localStorage.setItem(
       "expense_user",
       JSON.stringify(data.user)
@@ -261,6 +265,7 @@ function App() {
     }
 
     localStorage.setItem("expense_token", data.token);
+
     localStorage.setItem(
       "expense_user",
       JSON.stringify(data.user)
@@ -422,12 +427,12 @@ function App() {
   ]);
 
   // =======================================================
-  // CONNECT TRANSACTIONS TO AI
+  // AI SPENDING INSIGHTS
   // =======================================================
 
   const connectTransactionsToAI = useCallback(
     async () => {
-      if (!token || transactions.length === 0) {
+      if (!token) {
         setAiData(null);
         setAiError("");
         return;
@@ -436,6 +441,16 @@ function App() {
       try {
         setAiLoading(true);
         setAiError("");
+
+        // -------------------------------------------------
+        // Send ALL transactions to AI service.
+        // The AI service can analyze:
+        // - spending patterns
+        // - categories
+        // - average expenses
+        // - high spending areas
+        // - financial trends
+        // -------------------------------------------------
 
         const formattedTransactions =
           transactions.map((transaction) => ({
@@ -480,6 +495,14 @@ function App() {
             body: JSON.stringify({
               transactions:
                 formattedTransactions,
+
+              analysisPeriod: {
+                month:
+                  selectedMonth + 1,
+
+                year:
+                  selectedYear,
+              },
             }),
           }
         );
@@ -499,7 +522,7 @@ function App() {
         setAiData(data);
 
         console.log(
-          "AI transaction data:",
+          "AI Spending Insights:",
           data
         );
       } catch (error) {
@@ -516,7 +539,12 @@ function App() {
         setAiLoading(false);
       }
     },
-    [token, transactions]
+    [
+      token,
+      transactions,
+      selectedMonth,
+      selectedYear,
+    ]
   );
 
   // =======================================================
@@ -524,10 +552,7 @@ function App() {
   // =======================================================
 
   useEffect(() => {
-    if (
-      token &&
-      transactions.length > 0
-    ) {
+    if (token) {
       connectTransactionsToAI();
     } else {
       setAiData(null);
@@ -536,6 +561,8 @@ function App() {
   }, [
     token,
     transactions,
+    selectedMonth,
+    selectedYear,
     connectTransactionsToAI,
   ]);
 
@@ -772,9 +799,13 @@ function App() {
         title,
         amount,
         type: transactionForm.type,
+
         category:
-          transactionForm.category || "Other",
+          transactionForm.category ||
+          "Other",
+
         date: transactionForm.date,
+
         note:
           transactionForm.note.trim(),
       };
@@ -1015,7 +1046,7 @@ function App() {
     },
     {
       id: "insights",
-      label: "Insights",
+      label: "AI Insights",
       icon: BarChart3,
     },
   ];
@@ -1025,7 +1056,7 @@ function App() {
       ? "Dashboard"
       : activePage === "transactions"
       ? "Transactions"
-      : "Insights";
+      : "AI Spending Insights";
 
   // =======================================================
   // UI
@@ -1034,7 +1065,9 @@ function App() {
   return (
     <div className="app-shell">
 
-      {/* SIDEBAR */}
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
 
       <aside
         className={`sidebar ${
@@ -1043,7 +1076,9 @@ function App() {
             : ""
         }`}
       >
+
         <div className="brand">
+
           <div className="brand-icon">
             <WalletCards size={23} />
           </div>
@@ -1055,9 +1090,11 @@ function App() {
               Smart Expense Manager
             </span>
           </div>
+
         </div>
 
         <nav className="sidebar-nav">
+
           {navigation.map((item) => {
             const Icon = item.icon;
 
@@ -1075,19 +1112,23 @@ function App() {
                   setMobileMenu(false);
                 }}
               >
+
                 <Icon size={19} />
 
                 <span>
                   {item.label}
                 </span>
+
               </button>
             );
           })}
+
         </nav>
 
         <div className="sidebar-bottom">
 
           <div className="user-card">
+
             <div className="avatar">
               {user?.name
                 ?.charAt(0)
@@ -1095,6 +1136,7 @@ function App() {
             </div>
 
             <div className="user-info">
+
               <strong>
                 {user?.name || "User"}
               </strong>
@@ -1102,7 +1144,9 @@ function App() {
               <span>
                 {user?.email || ""}
               </span>
+
             </div>
+
           </div>
 
           <button
@@ -1115,13 +1159,18 @@ function App() {
           </button>
 
         </div>
+
       </aside>
 
-      {/* MAIN */}
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
 
       <main className="main-content">
 
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <header className="topbar">
 
@@ -1139,6 +1188,7 @@ function App() {
           </button>
 
           <div>
+
             <p className="eyebrow">
               PERSONAL FINANCE
             </p>
@@ -1146,13 +1196,16 @@ function App() {
             <h2>
               {pageTitle}
             </h2>
+
           </div>
 
           <div className="topbar-actions">
+
             {(activePage ===
               "dashboard" ||
               activePage ===
                 "transactions") && (
+
               <button
                 type="button"
                 className="primary-button"
@@ -1163,20 +1216,26 @@ function App() {
                 <Plus size={18} />
                 Add Transaction
               </button>
+
             )}
+
           </div>
 
         </header>
 
-        {/* PERIOD SELECTOR */}
+        {/* =================================================
+            PERIOD SELECTOR
+        ================================================= */}
 
         {(activePage ===
           "dashboard" ||
           activePage ===
             "insights") && (
+
           <section className="period-toolbar">
 
             <div>
+
               <span className="toolbar-label">
                 Analysis period
               </span>
@@ -1185,11 +1244,13 @@ function App() {
                 {months[selectedMonth]}{" "}
                 {selectedYear}
               </strong>
+
             </div>
 
             <div className="period-controls">
 
               <div className="select-wrapper">
+
                 <CalendarDays size={17} />
 
                 <select
@@ -1202,23 +1263,29 @@ function App() {
                     )
                   }
                 >
+
                   {months.map(
                     (
                       month,
                       index
                     ) => (
+
                       <option
                         key={month}
                         value={index}
                       >
                         {month}
                       </option>
+
                     )
                   )}
+
                 </select>
+
               </div>
 
               <div className="select-wrapper">
+
                 <select
                   value={selectedYear}
                   onChange={(event) =>
@@ -1229,22 +1296,28 @@ function App() {
                     )
                   }
                 >
+
                   {years.map(
                     (year) => (
+
                       <option
                         key={year}
                         value={year}
                       >
                         {year}
                       </option>
+
                     )
                   )}
+
                 </select>
+
               </div>
 
             </div>
 
           </section>
+
         )}
 
         {/* =================================================
@@ -1253,11 +1326,15 @@ function App() {
 
         {activePage ===
           "dashboard" && (
+
           <div className="page-container">
+
+            {/* WELCOME */}
 
             <section className="welcome-section">
 
               <div>
+
                 <p className="welcome-small">
                   Welcome back 👋
                 </p>
@@ -1273,6 +1350,7 @@ function App() {
                   make smarter financial
                   decisions.
                 </p>
+
               </div>
 
               <div className="welcome-decoration">
@@ -1286,11 +1364,13 @@ function App() {
             <section className="stats-grid">
 
               <div className="stat-card">
+
                 <div className="stat-icon income">
                   <TrendingUp size={21} />
                 </div>
 
                 <div>
+
                   <span>
                     Total Income
                   </span>
@@ -1304,15 +1384,19 @@ function App() {
                   <small>
                     {months[selectedMonth]} income
                   </small>
+
                 </div>
+
               </div>
 
               <div className="stat-card">
+
                 <div className="stat-icon expense">
                   <TrendingDown size={21} />
                 </div>
 
                 <div>
+
                   <span>
                     Total Expenses
                   </span>
@@ -1326,15 +1410,19 @@ function App() {
                   <small>
                     {months[selectedMonth]} spending
                   </small>
+
                 </div>
+
               </div>
 
               <div className="stat-card">
+
                 <div className="stat-icon balance">
                   <Wallet size={21} />
                 </div>
 
                 <div>
+
                   <span>
                     Balance
                   </span>
@@ -1348,15 +1436,19 @@ function App() {
                   <small>
                     Income − Expenses
                   </small>
+
                 </div>
+
               </div>
 
               <div className="stat-card">
+
                 <div className="stat-icon budget">
                   <WalletCards size={21} />
                 </div>
 
                 <div>
+
                   <span>
                     Monthly Budget
                   </span>
@@ -1374,7 +1466,9 @@ function App() {
                         )} remaining`
                       : "No budget set"}
                   </small>
+
                 </div>
+
               </div>
 
             </section>
@@ -1390,6 +1484,7 @@ function App() {
                 <div className="card-header">
 
                   <div>
+
                     <span className="section-label">
                       MONTHLY BUDGET
                     </span>
@@ -1397,6 +1492,7 @@ function App() {
                     <h3>
                       {months[selectedMonth]} budget
                     </h3>
+
                   </div>
 
                   <button
@@ -1415,27 +1511,38 @@ function App() {
                 <div className="budget-main">
 
                   <div className="budget-amount">
-                    <span>Budget</span>
+
+                    <span>
+                      Budget
+                    </span>
 
                     <strong>
                       {formatCurrency(
                         budget
                       )}
                     </strong>
+
                   </div>
 
                   <div className="budget-amount">
-                    <span>Spent</span>
+
+                    <span>
+                      Spent
+                    </span>
 
                     <strong>
                       {formatCurrency(
                         totals.expense
                       )}
                     </strong>
+
                   </div>
 
                   <div className="budget-amount">
-                    <span>Remaining</span>
+
+                    <span>
+                      Remaining
+                    </span>
 
                     <strong
                       className={
@@ -1448,6 +1555,7 @@ function App() {
                         remainingBudget
                       )}
                     </strong>
+
                   </div>
 
                 </div>
@@ -1455,6 +1563,7 @@ function App() {
                 <div className="progress-container">
 
                   <div className="progress-label">
+
                     <span>
                       Budget usage
                     </span>
@@ -1465,9 +1574,11 @@ function App() {
                       )}
                       %
                     </strong>
+
                   </div>
 
                   <div className="progress-track">
+
                     <div
                       className="progress-fill"
                       style={{
@@ -1475,6 +1586,7 @@ function App() {
                           `${budgetPercentage}%`,
                       }}
                     />
+
                   </div>
 
                 </div>
@@ -1486,11 +1598,13 @@ function App() {
                     setShowBudgetModal(true)
                   }
                 >
+
                   <WalletCards size={17} />
 
                   {budget > 0
                     ? "Update Monthly Budget"
                     : "Set Monthly Budget"}
+
                 </button>
 
               </div>
@@ -1502,6 +1616,7 @@ function App() {
                 <div className="card-header">
 
                   <div>
+
                     <span className="section-label">
                       RECENT ACTIVITY
                     </span>
@@ -1509,6 +1624,7 @@ function App() {
                     <h3>
                       Latest transactions
                     </h3>
+
                   </div>
 
                   <button
@@ -1527,6 +1643,7 @@ function App() {
 
                 {selectedTransactions.length ===
                 0 ? (
+
                   <div className="empty-state small">
 
                     <Receipt size={32} />
@@ -1549,7 +1666,9 @@ function App() {
                     </button>
 
                   </div>
+
                 ) : (
+
                   <div className="recent-list">
 
                     {selectedTransactions
@@ -1558,6 +1677,7 @@ function App() {
                         (
                           transaction
                         ) => (
+
                           <div
                             className="recent-item"
                             key={
@@ -1622,17 +1742,21 @@ function App() {
                             </strong>
 
                           </div>
+
                         )
                       )}
 
                   </div>
+
                 )}
 
               </div>
 
             </section>
 
-            {/* AI STATUS */}
+            {/* =================================================
+                AI SPENDING INSIGHTS STATUS
+            ================================================= */}
 
             <section className="glass-card ai-status-card">
 
@@ -1645,13 +1769,15 @@ function App() {
                   </div>
 
                   <div>
+
                     <span className="section-label">
-                      AI SERVICE
+                      AI SPENDING INSIGHTS
                     </span>
 
                     <h3>
                       SpendWise AI
                     </h3>
+
                   </div>
 
                 </div>
@@ -1679,43 +1805,59 @@ function App() {
               </div>
 
               {aiLoading && (
+
                 <div className="ai-message">
+
                   <div className="loading-dot" />
+
                   <p>
-                    Processing your transactions
-                    with SpendWise AI...
+                    Analyzing your spending
+                    patterns with SpendWise AI...
                   </p>
+
                 </div>
+
               )}
 
               {!aiLoading &&
                 aiError && (
+
                   <div className="ai-message error">
+
+                    <AlertCircle size={20} />
+
                     <p>
                       AI service unavailable:{" "}
                       {aiError}
                     </p>
+
                   </div>
+
                 )}
 
               {!aiLoading &&
                 !aiError &&
                 aiData && (
+
                   <div className="ai-results">
 
                     <div className="ai-result">
+
                       <span>
                         Processed transactions
                       </span>
 
                       <strong>
                         {
-                          aiData.transactionCount
+                          aiData.transactionCount ??
+                          transactions.length
                         }
                       </strong>
+
                     </div>
 
                     <div className="ai-result">
+
                       <span>
                         Average expense
                       </span>
@@ -1725,24 +1867,52 @@ function App() {
                           aiData.averageExpense
                         )}
                       </strong>
+
                     </div>
 
                     <div className="ai-result">
+
                       <span>
                         AI status
                       </span>
 
                       <strong>
+                        <CheckCircle2
+                          size={16}
+                        />
+
                         Analysis ready
                       </strong>
+
                     </div>
 
                   </div>
+
+                )}
+
+              {!aiLoading &&
+                !aiError &&
+                !aiData &&
+                transactions.length === 0 && (
+
+                  <div className="ai-message">
+
+                    <Brain size={20} />
+
+                    <p>
+                      Add transactions to
+                      generate AI spending
+                      insights.
+                    </p>
+
+                  </div>
+
                 )}
 
             </section>
 
           </div>
+
         )}
 
         {/* =================================================
@@ -1751,11 +1921,13 @@ function App() {
 
         {activePage ===
           "transactions" && (
+
           <div className="page-container">
 
             <section className="transactions-intro">
 
               <div>
+
                 <p className="welcome-small">
                   FINANCIAL RECORDS
                 </p>
@@ -1768,11 +1940,13 @@ function App() {
                   Manage all your income and
                   expenses in one place.
                 </p>
+
               </div>
 
               <div className="transaction-summary">
 
                 <div>
+
                   <span>
                     Transactions
                   </span>
@@ -1782,9 +1956,11 @@ function App() {
                       selectedTransactions.length
                     }
                   </strong>
+
                 </div>
 
                 <div>
+
                   <span>
                     Spent
                   </span>
@@ -1794,6 +1970,7 @@ function App() {
                       totals.expense
                     )}
                   </strong>
+
                 </div>
 
               </div>
@@ -1805,6 +1982,7 @@ function App() {
               <div className="card-header">
 
                 <div>
+
                   <span className="section-label">
                     {months[
                       selectedMonth
@@ -1815,6 +1993,7 @@ function App() {
                   <h3>
                     Transaction history
                   </h3>
+
                 </div>
 
                 <button
@@ -1831,12 +2010,18 @@ function App() {
               </div>
 
               {loading ? (
+
                 <div className="loading-state">
+
                   <div className="spinner" />
+
                   Loading transactions...
+
                 </div>
+
               ) : selectedTransactions.length ===
                 0 ? (
+
                 <div className="empty-state">
 
                   <div className="empty-icon">
@@ -1864,13 +2049,17 @@ function App() {
                   </button>
 
                 </div>
+
               ) : (
+
                 <div className="table-wrapper">
 
                   <table>
 
                     <thead>
+
                       <tr>
+
                         <th>
                           Transaction
                         </th>
@@ -1894,7 +2083,9 @@ function App() {
                         <th>
                           Actions
                         </th>
+
                       </tr>
+
                     </thead>
 
                     <tbody>
@@ -1903,6 +2094,7 @@ function App() {
                         (
                           transaction
                         ) => (
+
                           <tr
                             key={getTransactionId(
                               transaction
@@ -1914,9 +2106,11 @@ function App() {
                               <div className="table-title">
 
                                 <div className="mini-icon">
+
                                   <Receipt
                                     size={15}
                                   />
+
                                 </div>
 
                                 <div>
@@ -1928,11 +2122,13 @@ function App() {
                                   </strong>
 
                                   {transaction.note && (
+
                                     <span>
                                       {
                                         transaction.note
                                       }
                                     </span>
+
                                   )}
 
                                 </div>
@@ -1942,11 +2138,13 @@ function App() {
                             </td>
 
                             <td>
+
                               <span className="category-pill">
                                 {
                                   transaction.category
                                 }
                               </span>
+
                             </td>
 
                             <td>
@@ -1979,6 +2177,7 @@ function App() {
                                     : "amount-negative"
                                 }
                               >
+
                                 {transaction.type ===
                                 "income"
                                   ? "+"
@@ -1987,6 +2186,7 @@ function App() {
                                 {formatCurrency(
                                   transaction.amount
                                 )}
+
                               </strong>
 
                             </td>
@@ -2032,6 +2232,7 @@ function App() {
                             </td>
 
                           </tr>
+
                         )
                       )}
 
@@ -2040,19 +2241,22 @@ function App() {
                   </table>
 
                 </div>
+
               )}
 
             </section>
 
           </div>
+
         )}
 
         {/* =================================================
-            INSIGHTS
+            AI SPENDING INSIGHTS
         ================================================= */}
 
         {activePage ===
           "insights" && (
+
           <div className="page-container">
 
             <AllInsights
@@ -2083,6 +2287,7 @@ function App() {
             />
 
           </div>
+
         )}
 
       </main>
@@ -2092,15 +2297,18 @@ function App() {
       =================================================== */}
 
       {showTransactionModal && (
+
         <div
           className="modal-overlay"
           onMouseDown={(event) => {
+
             if (
               event.target ===
               event.currentTarget
             ) {
               closeTransactionModal();
             }
+
           }}
         >
 
@@ -2109,6 +2317,7 @@ function App() {
             <div className="modal-header">
 
               <div>
+
                 <span className="section-label">
                   TRANSACTION
                 </span>
@@ -2118,6 +2327,7 @@ function App() {
                     ? "Edit Transaction"
                     : "Add Transaction"}
                 </h2>
+
               </div>
 
               <button
@@ -2214,6 +2424,7 @@ function App() {
                       handleFormChange
                     }
                   >
+
                     <option value="expense">
                       Expense
                     </option>
@@ -2221,6 +2432,7 @@ function App() {
                     <option value="income">
                       Income
                     </option>
+
                   </select>
 
                 </div>
@@ -2245,16 +2457,20 @@ function App() {
                       handleFormChange
                     }
                   >
+
                     {categories.map(
                       (category) => (
+
                         <option
                           key={category}
                           value={category}
                         >
                           {category}
                         </option>
+
                       )
                     )}
+
                   </select>
 
                 </div>
@@ -2342,6 +2558,7 @@ function App() {
           </div>
 
         </div>
+
       )}
 
       {/* ===================================================
@@ -2349,19 +2566,24 @@ function App() {
       =================================================== */}
 
       {showBudgetModal && (
+
         <div
           className="modal-overlay"
           onMouseDown={(event) => {
+
             if (
               event.target ===
               event.currentTarget
             ) {
+
               if (!budgetSaving) {
                 setShowBudgetModal(
                   false
                 );
               }
+
             }
+
           }}
         >
 
@@ -2370,6 +2592,7 @@ function App() {
             <div className="modal-header">
 
               <div>
+
                 <span className="section-label">
                   MONTHLY BUDGET
                 </span>
@@ -2377,6 +2600,7 @@ function App() {
                 <h2>
                   Set your budget
                 </h2>
+
               </div>
 
               <button
@@ -2427,7 +2651,9 @@ function App() {
 
                 <div className="large-money-input">
 
-                  <span>₹</span>
+                  <span>
+                    ₹
+                  </span>
 
                   <input
                     id="budget-input"
@@ -2497,6 +2723,7 @@ function App() {
           </div>
 
         </div>
+
       )}
 
     </div>
