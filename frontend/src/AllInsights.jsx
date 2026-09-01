@@ -1,34 +1,22 @@
 import { useMemo } from "react";
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  LineChart,
-  Line,
-} from "recharts";
 
 import {
+  BarChart3,
   TrendingUp,
   TrendingDown,
   Wallet,
   Target,
-  AlertTriangle,
-  Sparkles,
-  Brain,
-  Lightbulb,
-  ShieldCheck,
+  PieChart,
   ArrowUpRight,
   ArrowDownRight,
-  CircleDollarSign,
+  Sparkles,
 } from "lucide-react";
+
+const formatCurrency = (value) => {
+  const amount = Number(value) || 0;
+
+  return `₹${amount.toLocaleString("en-IN")}`;
+};
 
 const months = [
   "January",
@@ -45,33 +33,21 @@ const months = [
   "December",
 ];
 
-const categories = [
-  "Food",
-  "Shopping",
-  "Transport",
-  "Bills",
-  "Entertainment",
-  "Health",
-  "Education",
-  "Travel",
-  "Other",
-];
-
 function AllInsights({
   transactions = [],
   selectedMonth,
   selectedYear,
   budget = 0,
 }) {
-  /*
-   * =====================================================
-   * SELECTED MONTH DATA
-   * =====================================================
-   */
+  /* =====================================================
+     FILTER CURRENT MONTH
+     ===================================================== */
 
-  const monthlyTransactions = useMemo(() => {
+  const selectedTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
-      if (!transaction.date) return false;
+      if (!transaction?.date) {
+        return false;
+      }
 
       const date = new Date(transaction.date);
 
@@ -86,22 +62,20 @@ function AllInsights({
     });
   }, [transactions, selectedMonth, selectedYear]);
 
-  /*
-   * =====================================================
-   * TOTALS
-   * =====================================================
-   */
+  /* =====================================================
+     CALCULATE TOTALS
+     ===================================================== */
 
   const totals = useMemo(() => {
     let income = 0;
     let expense = 0;
 
-    monthlyTransactions.forEach((transaction) => {
-      const amount = Number(transaction.amount) || 0;
+    selectedTransactions.forEach((transaction) => {
+      const amount = Number(transaction?.amount) || 0;
 
-      if (transaction.type === "income") {
+      if (transaction?.type === "income") {
         income += amount;
-      } else if (transaction.type === "expense") {
+      } else {
         expense += amount;
       }
     });
@@ -111,787 +85,323 @@ function AllInsights({
       expense,
       balance: income - expense,
     };
-  }, [monthlyTransactions]);
+  }, [selectedTransactions]);
 
-  /*
-   * =====================================================
-   * CATEGORY DATA
-   * =====================================================
-   */
+  /* =====================================================
+     CATEGORY ANALYSIS
+     ===================================================== */
 
   const categoryData = useMemo(() => {
-    const result = {};
+    const categoryTotals = {};
 
-    categories.forEach((category) => {
-      result[category] = 0;
-    });
-
-    monthlyTransactions.forEach((transaction) => {
-      if (transaction.type !== "expense") return;
-
-      const category = transaction.category || "Other";
-
-      if (!Object.prototype.hasOwnProperty.call(result, category)) {
-        result[category] = 0;
-      }
-
-      result[category] += Number(transaction.amount) || 0;
-    });
-
-    return Object.entries(result)
-      .filter(([, amount]) => amount > 0)
-      .map(([name, value]) => ({
-        name,
-        value,
-      }));
-  }, [monthlyTransactions]);
-
-  /*
-   * =====================================================
-   * DAILY EXPENSE DATA
-   * =====================================================
-   */
-
-  const dailyExpenseData = useMemo(() => {
-    const result = {};
-
-    monthlyTransactions.forEach((transaction) => {
-      if (transaction.type !== "expense") return;
-      if (!transaction.date) return;
-
-      const date = new Date(transaction.date);
-
-      if (Number.isNaN(date.getTime())) {
+    selectedTransactions.forEach((transaction) => {
+      if (transaction?.type !== "expense") {
         return;
       }
 
-      const day = date.getDate();
+      const category =
+        transaction?.category || "Other";
 
-      if (!result[day]) {
-        result[day] = 0;
-      }
+      const amount =
+        Number(transaction?.amount) || 0;
 
-      result[day] += Number(transaction.amount) || 0;
+      categoryTotals[category] =
+        (categoryTotals[category] || 0) + amount;
     });
 
-    return Object.entries(result)
-      .map(([day, amount]) => ({
-        day: `Day ${day}`,
+    return Object.entries(categoryTotals)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, amount]) => ({
+        category,
         amount,
-        dayNumber: Number(day),
-      }))
-      .sort((a, b) => a.dayNumber - b.dayNumber);
-  }, [monthlyTransactions]);
+        percentage:
+          totals.expense > 0
+            ? (amount / totals.expense) * 100
+            : 0,
+      }));
+  }, [selectedTransactions, totals.expense]);
 
-  /*
-   * =====================================================
-   * INCOME VS EXPENSE
-   * =====================================================
-   */
+  /* =====================================================
+     TOP CATEGORY
+     ===================================================== */
 
-  const incomeExpenseData = useMemo(() => {
-    return [
-      {
-        name: "Income",
-        amount: totals.income,
-      },
-      {
-        name: "Expenses",
-        amount: totals.expense,
-      },
-    ];
-  }, [totals]);
+  const topCategory =
+    categoryData.length > 0
+      ? categoryData[0]
+      : null;
 
-  /*
-   * =====================================================
-   * BUDGET
-   * =====================================================
-   */
+  /* =====================================================
+     BUDGET
+     ===================================================== */
 
-  const budgetPercentage =
+  const budgetUsage =
     budget > 0
-      ? Math.min((totals.expense / budget) * 100, 100)
+      ? Math.min(
+          (totals.expense / budget) * 100,
+          100
+        )
       : 0;
 
-  const remaining = budget - totals.expense;
+  const remainingBudget =
+    budget - totals.expense;
 
-  /*
-   * =====================================================
-   * FORMAT MONEY
-   * =====================================================
-   */
+  /* =====================================================
+     AVERAGE EXPENSE
+     ===================================================== */
 
-  const money = (value) => {
-    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
-  };
-
-  /*
-   * =====================================================
-   * TOP CATEGORY
-   * =====================================================
-   */
-
-  const topCategory = useMemo(() => {
-    if (categoryData.length === 0) {
-      return null;
-    }
-
-    return categoryData.reduce((max, item) =>
-      item.value > max.value ? item : max
-    );
-  }, [categoryData]);
-
-  /*
-   * =====================================================
-   * AVERAGE EXPENSE
-   * =====================================================
-   */
-
-  const averageExpense = useMemo(() => {
-    const expenseTransactions = monthlyTransactions.filter(
-      (transaction) => transaction.type === "expense"
+  const expenseTransactions =
+    selectedTransactions.filter(
+      (transaction) =>
+        transaction?.type !== "income"
     );
 
-    if (expenseTransactions.length === 0) {
-      return 0;
+  const averageExpense =
+    expenseTransactions.length > 0
+      ? totals.expense /
+        expenseTransactions.length
+      : 0;
+
+  /* =====================================================
+     INSIGHT MESSAGE
+     ===================================================== */
+
+  let insightMessage =
+    "Start adding transactions to receive personalized spending insights.";
+
+  if (totals.expense > 0 && topCategory) {
+    if (
+      budget > 0 &&
+      totals.expense > budget
+    ) {
+      insightMessage = `Your spending has exceeded your ${months[selectedMonth]} budget. Consider reviewing your ${topCategory.category} expenses.`;
+    } else if (
+      budget > 0 &&
+      budgetUsage >= 80
+    ) {
+      insightMessage = `You have used ${Math.round(
+        budgetUsage
+      )}% of your monthly budget. Keep an eye on your ${topCategory.category} spending.`;
+    } else {
+      insightMessage = `Your highest spending category is ${topCategory.category}. You're currently using ${Math.round(
+        budgetUsage
+      )}% of your monthly budget.`;
     }
+  }
 
-    return totals.expense / expenseTransactions.length;
-  }, [monthlyTransactions, totals.expense]);
+  /* =====================================================
+     EMPTY STATE
+     ===================================================== */
 
-  /*
-   * =====================================================
-   * AI INSIGHTS
-   * =====================================================
-   */
-
-  const aiInsights = useMemo(() => {
-    const insights = [];
-
-    /*
-     * No expenses
-     */
-
-    if (totals.expense === 0) {
-      insights.push({
-        icon: Sparkles,
-        type: "neutral",
-        title: "Start tracking your spending",
-        text:
-          "Add a few expense transactions to unlock personalized AI spending insights.",
-      });
-
-      return insights;
-    }
-
-    /*
-     * Top category insight
-     */
-
-    if (topCategory) {
-      const percentage =
-        totals.expense > 0
-          ? (topCategory.value / totals.expense) * 100
-          : 0;
-
-      insights.push({
-        icon: TrendingDown,
-        type: "warning",
-        title: `${topCategory.name} is your biggest expense`,
-        text:
-          `${topCategory.name} accounts for approximately ` +
-          `${Math.round(percentage)}% of your total spending this month.`,
-      });
-    }
-
-    /*
-     * Budget insight
-     */
-
-    if (budget > 0) {
-      if (totals.expense > budget) {
-        insights.push({
-          icon: AlertTriangle,
-          type: "danger",
-          title: "You're over your budget",
-          text:
-            `Your spending is ${money(
-              totals.expense - budget
-            )} above your monthly budget. Consider reducing non-essential spending.`,
-        });
-      } else if (budgetPercentage >= 80) {
-        insights.push({
-          icon: AlertTriangle,
-          type: "warning",
-          title: "Budget usage is getting high",
-          text:
-            `You've used ${Math.round(
-              budgetPercentage
-            )}% of your monthly budget. Keep an eye on upcoming expenses.`,
-        });
-      } else {
-        insights.push({
-          icon: ShieldCheck,
-          type: "positive",
-          title: "You're within your budget",
-          text:
-            `You still have ${money(
-              remaining
-            )} available for the rest of the month.`,
-        });
-      }
-    }
-
-    /*
-     * Balance insight
-     */
-
-    if (totals.balance > 0) {
-      insights.push({
-        icon: TrendingUp,
-        type: "positive",
-        title: "Positive monthly balance",
-        text:
-          "Your income is currently higher than your expenses for this month.",
-      });
-    } else if (totals.balance < 0) {
-      insights.push({
-        icon: TrendingDown,
-        type: "danger",
-        title: "Expenses are higher than income",
-        text:
-          "Your current spending is greater than your recorded income this month.",
-      });
-    }
-
-    /*
-     * Average expense insight
-     */
-
-    if (averageExpense > 0) {
-      insights.push({
-        icon: CircleDollarSign,
-        type: "neutral",
-        title: "Average transaction size",
-        text:
-          `Your average expense is around ${money(
-            averageExpense
-          )} per transaction.`,
-      });
-    }
-
-    return insights.slice(0, 4);
-  }, [
-    totals,
-    topCategory,
-    budget,
-    budgetPercentage,
-    remaining,
-    averageExpense,
-  ]);
-
-  /*
-   * =====================================================
-   * TOOLTIP
-   * =====================================================
-   */
-
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-  }) => {
-    if (!active || !payload || !payload.length) {
-      return null;
-    }
-
-    return (
-      <div className="chart-tooltip">
-        {label && <strong>{label}</strong>}
-
-        {payload.map((item, index) => (
-          <div key={index}>
-            {item.name || "Amount"}: {money(item.value)}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  /*
-   * =====================================================
-   * EMPTY STATE
-   * =====================================================
-   */
-
-  if (monthlyTransactions.length === 0) {
+  if (selectedTransactions.length === 0) {
     return (
       <div className="insights-page">
 
-        {/* PAGE HEADER */}
+        <section className="insights-hero">
+          <div className="insights-hero-content">
+            <div className="insights-icon-large">
+              <Sparkles size={24} />
+            </div>
 
-        <section className="insights-heading">
-          <div>
-            <span className="section-label">
-              FINANCIAL ANALYTICS
-            </span>
+            <div>
+              <span className="insights-eyebrow">
+                SMART ANALYSIS
+              </span>
 
-            <h1>Insights & Analytics</h1>
+              <h1>
+                Your Financial Insights
+              </h1>
 
-            <p>
-              Understand your spending patterns and
-              financial habits.
-            </p>
+              <p>
+                Understand your spending patterns,
+                track your progress and make smarter
+                financial decisions.
+              </p>
+            </div>
+          </div>
+
+          <div className="insights-period">
+            {months[selectedMonth]}{" "}
+            {selectedYear}
           </div>
         </section>
 
-        {/* AI EMPTY STATE */}
-
-        <section className="ai-insights-card">
-
-          <div className="ai-insights-header">
-
-            <div className="ai-title-area">
-
-              <div className="ai-icon">
-                <Sparkles size={22} />
-              </div>
-
-              <div>
-                <span className="section-label">
-                  AI POWERED
-                </span>
-
-                <h2>
-                  Smart Financial Insights
-                </h2>
-
-                <p>
-                  Personalized recommendations based
-                  on your spending activity.
-                </p>
-              </div>
-
-            </div>
-
-            <div className="ai-status">
-              <span className="ai-status-dot" />
-              AI Ready
-            </div>
-
-          </div>
-
-          <div className="ai-empty-content">
-
-            <div className="ai-empty-icon">
-              <Brain size={38} />
-            </div>
-
-            <h3>
-              Your AI insights are waiting
-            </h3>
-
-            <p>
-              Add transactions for{" "}
-              <strong>
-                {months[selectedMonth]} {selectedYear}
-              </strong>{" "}
-              and SpendWise will analyze your
-              spending patterns, budget usage and
-              financial behavior.
-            </p>
-
-          </div>
-
-        </section>
-
-        {/* NORMAL EMPTY STATE */}
-
-        <div className="insights-empty">
-
+        <section className="insights-empty-card">
           <div className="insights-empty-icon">
-            <TrendingUp size={34} />
+            <BarChart3 size={30} />
           </div>
 
-          <h2>No data for this month</h2>
+          <h2>
+            No insights available yet
+          </h2>
 
           <p>
             Add some transactions for{" "}
-            <strong>
-              {months[selectedMonth]} {selectedYear}
-            </strong>{" "}
-            to see your charts and spending insights.
+            {months[selectedMonth]}{" "}
+            {selectedYear} to see your spending
+            analysis.
           </p>
-
-        </div>
-
+        </section>
       </div>
     );
   }
 
-  /*
-   * =====================================================
-   * MAIN UI
-   * =====================================================
-   */
+  /* =====================================================
+     MAIN INSIGHTS UI
+     ===================================================== */
 
   return (
     <div className="insights-page">
 
       {/* =================================================
-          HEADER
+          HERO
       ================================================= */}
 
-      <section className="insights-heading">
+      <section className="insights-hero">
+        <div className="insights-hero-content">
 
-        <div>
-
-          <span className="section-label">
-            FINANCIAL ANALYTICS
-          </span>
-
-          <h1>
-            Insights & Analytics
-          </h1>
-
-          <p>
-            Understand your spending patterns,
-            income and budget performance.
-          </p>
-
-        </div>
-
-      </section>
-
-      {/* =================================================
-          AI INSIGHTS
-      ================================================= */}
-
-      <section className="ai-insights-card">
-
-        <div className="ai-insights-header">
-
-          <div className="ai-title-area">
-
-            <div className="ai-icon">
-              <Sparkles size={22} />
-            </div>
-
-            <div>
-
-              <span className="section-label">
-                AI POWERED
-              </span>
-
-              <h2>
-                Smart Financial Insights
-              </h2>
-
-              <p>
-                Intelligent analysis of your{" "}
-                {months[selectedMonth]} spending.
-              </p>
-
-            </div>
-
+          <div className="insights-icon-large">
+            <Sparkles size={24} />
           </div>
-
-          <div className="ai-status">
-            <span className="ai-status-dot" />
-            AI Ready
-          </div>
-
-        </div>
-
-        <div className="ai-insights-grid">
-
-          {aiInsights.map((insight, index) => {
-
-            const Icon = insight.icon;
-
-            return (
-              <div
-                className={`ai-insight-item ${insight.type}`}
-                key={index}
-              >
-
-                <div className="ai-insight-icon">
-                  <Icon size={19} />
-                </div>
-
-                <div className="ai-insight-content">
-
-                  <h4>
-                    {insight.title}
-                  </h4>
-
-                  <p>
-                    {insight.text}
-                  </p>
-
-                </div>
-
-              </div>
-            );
-          })}
-
-        </div>
-
-        <div className="ai-footer">
 
           <div>
-            <Brain size={17} />
-
-            <span>
-              SpendWise AI is analyzing your
-              financial patterns
+            <span className="insights-eyebrow">
+              SMART ANALYSIS
             </span>
+
+            <h1>
+              Your Financial Insights
+            </h1>
+
+            <p>
+              Here's what your spending looks like
+              for {months[selectedMonth]}{" "}
+              {selectedYear}.
+            </p>
           </div>
 
-          <span className="ai-footer-badge">
-            Smart Analysis
+        </div>
+
+        <div className="insights-period">
+          {months[selectedMonth]}{" "}
+          {selectedYear}
+        </div>
+      </section>
+
+      {/* =================================================
+          INSIGHT MESSAGE
+      ================================================= */}
+
+      <section className="smart-insight-card">
+
+        <div className="smart-insight-icon">
+          <Sparkles size={19} />
+        </div>
+
+        <div>
+          <span>
+            SMART INSIGHT
           </span>
 
+          <p>
+            {insightMessage}
+          </p>
         </div>
 
       </section>
 
       {/* =================================================
-          SUMMARY CARDS
+          SUMMARY
       ================================================= */}
 
-      <section className="insight-stats">
-
-        {/* INCOME */}
+      <section className="insights-summary-grid">
 
         <div className="insight-stat-card">
 
           <div className="insight-stat-icon income">
-            <TrendingUp size={21} />
+            <TrendingUp size={20} />
           </div>
 
           <div>
-
-            <span>
-              Total Income
-            </span>
+            <span>Total Income</span>
 
             <strong>
-              {money(totals.income)}
+              {formatCurrency(
+                totals.income
+              )}
             </strong>
 
             <small>
               {months[selectedMonth]}
             </small>
-
           </div>
 
         </div>
-
-        {/* EXPENSE */}
 
         <div className="insight-stat-card">
 
           <div className="insight-stat-icon expense">
-            <TrendingDown size={21} />
+            <TrendingDown size={20} />
           </div>
 
           <div>
-
-            <span>
-              Total Expenses
-            </span>
+            <span>Total Expenses</span>
 
             <strong>
-              {money(totals.expense)}
+              {formatCurrency(
+                totals.expense
+              )}
             </strong>
 
             <small>
-              {months[selectedMonth]}
+              {expenseTransactions.length} expense
+              {expenseTransactions.length === 1
+                ? ""
+                : "s"}
             </small>
-
           </div>
 
         </div>
 
-        {/* BALANCE */}
-
         <div className="insight-stat-card">
 
           <div className="insight-stat-icon balance">
-            <Wallet size={21} />
+            <Wallet size={20} />
           </div>
 
           <div>
-
-            <span>
-              Balance
-            </span>
+            <span>Balance</span>
 
             <strong>
-              {money(totals.balance)}
+              {formatCurrency(
+                totals.balance
+              )}
             </strong>
 
             <small>
               Income − Expenses
             </small>
-
           </div>
 
         </div>
-
-        {/* BUDGET */}
 
         <div className="insight-stat-card">
 
-          <div className="insight-stat-icon budget">
-            <Target size={21} />
+          <div className="insight-stat-icon average">
+            <BarChart3 size={20} />
           </div>
 
           <div>
-
-            <span>
-              Budget Usage
-            </span>
+            <span>Average Expense</span>
 
             <strong>
-              {Math.round(budgetPercentage)}%
-            </strong>
-
-            <small>
-              {budget > 0
-                ? `${money(remaining)} remaining`
-                : "No budget set"}
-            </small>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* =================================================
-          QUICK AI METRICS
-      ================================================= */}
-
-      <section className="ai-quick-grid">
-
-        {/* TOP CATEGORY */}
-
-        <div className="ai-quick-card">
-
-          <div className="ai-quick-icon">
-            <TrendingDown size={19} />
-          </div>
-
-          <div>
-
-            <span>
-              Top Category
-            </span>
-
-            <strong>
-              {topCategory
-                ? topCategory.name
-                : "No data"}
-            </strong>
-
-            <small>
-              {topCategory
-                ? money(topCategory.value)
-                : "—"}
-            </small>
-
-          </div>
-
-        </div>
-
-        {/* AVERAGE EXPENSE */}
-
-        <div className="ai-quick-card">
-
-          <div className="ai-quick-icon">
-            <CircleDollarSign size={19} />
-          </div>
-
-          <div>
-
-            <span>
-              Average Expense
-            </span>
-
-            <strong>
-              {money(averageExpense)}
+              {formatCurrency(
+                averageExpense
+              )}
             </strong>
 
             <small>
               Per transaction
             </small>
-
-          </div>
-
-        </div>
-
-        {/* BUDGET STATUS */}
-
-        <div className="ai-quick-card">
-
-          <div className="ai-quick-icon">
-            <Target size={19} />
-          </div>
-
-          <div>
-
-            <span>
-              Budget Status
-            </span>
-
-            <strong>
-              {budget === 0
-                ? "Not Set"
-                : totals.expense > budget
-                ? "Exceeded"
-                : "On Track"}
-            </strong>
-
-            <small>
-              {budget > 0
-                ? `${Math.round(
-                    budgetPercentage
-                  )}% used`
-                : "Set a monthly budget"}
-            </small>
-
-          </div>
-
-        </div>
-
-        {/* FINANCIAL HEALTH */}
-
-        <div className="ai-quick-card">
-
-          <div className="ai-quick-icon">
-            <ShieldCheck size={19} />
-          </div>
-
-          <div>
-
-            <span>
-              Financial Health
-            </span>
-
-            <strong>
-              {totals.balance > 0
-                ? "Positive"
-                : totals.balance < 0
-                ? "Needs Attention"
-                : "Balanced"}
-            </strong>
-
-            <small>
-              Based on this month
-            </small>
-
           </div>
 
         </div>
@@ -899,328 +409,122 @@ function AllInsights({
       </section>
 
       {/* =================================================
-          CHART ROW
+          ANALYSIS GRID
       ================================================= */}
 
-      <section className="insights-chart-grid">
+      <section className="insights-analysis-grid">
 
-        {/* =================================================
-            PIE CHART
-        ================================================= */}
+        {/* ===============================================
+            CATEGORY BREAKDOWN
+        =============================================== */}
 
-        <div className="insight-chart-card">
+        <div className="insights-card">
 
-          <div className="insight-chart-header">
+          <div className="insights-card-header">
 
             <div>
-
-              <span className="section-label">
-                EXPENSE BREAKDOWN
+              <span className="insights-section-label">
+                SPENDING BREAKDOWN
               </span>
 
-              <h3>
-                Spending by Category
-              </h3>
+              <h2>
+                Expenses by Category
+              </h2>
+            </div>
 
-              <p>
-                Where your money is going
-              </p>
-
+            <div className="insights-card-header-icon">
+              <PieChart size={18} />
             </div>
 
           </div>
 
-          <div className="chart-container">
+          <div className="category-list">
 
-            {categoryData.length === 0 ? (
+            {categoryData.map(
+              (item, index) => (
+                <div
+                  className="category-row"
+                  key={item.category}
+                >
 
-              <div className="chart-no-data">
-                No expense data available.
-              </div>
+                  <div className="category-row-top">
 
-            ) : (
+                    <div className="category-name">
+                      <span className="category-number">
+                        {index + 1}
+                      </span>
 
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
+                      <strong>
+                        {item.category}
+                      </strong>
+                    </div>
 
-                <PieChart>
+                    <div className="category-value">
+                      {formatCurrency(
+                        item.amount
+                      )}
+                    </div>
 
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={115}
-                    paddingAngle={3}
-                    dataKey="value"
-                    nameKey="name"
-                  >
+                  </div>
 
-                    {categoryData.map(
-                      (_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={`hsl(${
-                            (index * 42) % 360
-                          }, 70%, 55%)`}
-                        />
-                      )
-                    )}
+                  <div className="category-progress">
+                    <div
+                      style={{
+                        width: `${item.percentage}%`,
+                      }}
+                    />
+                  </div>
 
-                  </Pie>
+                  <div className="category-percentage">
+                    {item.percentage.toFixed(1)}%
+                    of total expenses
+                  </div>
 
-                  <Tooltip
-                    content={
-                      <CustomTooltip />
-                    }
-                  />
-
-                  <Legend
-                    verticalAlign="bottom"
-                    height={45}
-                  />
-
-                </PieChart>
-
-              </ResponsiveContainer>
-
+                </div>
+              )
             )}
 
           </div>
 
         </div>
 
-        {/* =================================================
-            BAR CHART
-        ================================================= */}
+        {/* ===============================================
+            BUDGET
+        =============================================== */}
 
-        <div className="insight-chart-card">
+        <div className="insights-card">
 
-          <div className="insight-chart-header">
-
-            <div>
-
-              <span className="section-label">
-                INCOME VS EXPENSE
-              </span>
-
-              <h3>
-                Money Flow
-              </h3>
-
-              <p>
-                Compare your income and spending
-              </p>
-
-            </div>
-
-          </div>
-
-          <div className="chart-container">
-
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-
-              <BarChart
-                data={incomeExpenseData}
-                margin={{
-                  top: 20,
-                  right: 20,
-                  left: 10,
-                  bottom: 10,
-                }}
-              >
-
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                />
-
-                <XAxis
-                  dataKey="name"
-                />
-
-                <YAxis
-                  tickFormatter={(value) =>
-                    `₹${value}`
-                  }
-                />
-
-                <Tooltip
-                  content={
-                    <CustomTooltip />
-                  }
-                />
-
-                <Bar
-                  dataKey="amount"
-                  radius={[
-                    8,
-                    8,
-                    0,
-                    0,
-                  ]}
-                  fill="#6366f1"
-                />
-
-              </BarChart>
-
-            </ResponsiveContainer>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* =================================================
-          DAILY EXPENSE CHART
-      ================================================= */}
-
-      <section className="insight-chart-card full-chart">
-
-        <div className="insight-chart-header">
-
-          <div>
-
-            <span className="section-label">
-              DAILY SPENDING
-            </span>
-
-            <h3>
-              Expense Trend
-            </h3>
-
-            <p>
-              How your spending changed
-              throughout{" "}
-              {months[selectedMonth]}
-            </p>
-
-          </div>
-
-        </div>
-
-        <div className="chart-container large">
-
-          {dailyExpenseData.length === 0 ? (
-
-            <div className="chart-no-data">
-              No expense data available.
-            </div>
-
-          ) : (
-
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-
-              <LineChart
-                data={dailyExpenseData}
-                margin={{
-                  top: 20,
-                  right: 25,
-                  left: 10,
-                  bottom: 20,
-                }}
-              >
-
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                />
-
-                <XAxis
-                  dataKey="day"
-                  interval="preserveStartEnd"
-                />
-
-                <YAxis
-                  tickFormatter={(value) =>
-                    `₹${value}`
-                  }
-                />
-
-                <Tooltip
-                  content={
-                    <CustomTooltip />
-                  }
-                />
-
-                <Line
-                  type="monotone"
-                  dataKey="amount"
-                  name="Expense"
-                  stroke="#6366f1"
-                  strokeWidth={3}
-                  dot={{
-                    r: 4,
-                  }}
-                  activeDot={{
-                    r: 7,
-                  }}
-                />
-
-              </LineChart>
-
-            </ResponsiveContainer>
-
-          )}
-
-        </div>
-
-      </section>
-
-      {/* =================================================
-          BOTTOM ANALYSIS
-      ================================================= */}
-
-      <section className="insight-bottom-grid">
-
-        {/* =================================================
-            BUDGET ANALYSIS
-        ================================================= */}
-
-        <div className="insight-chart-card">
-
-          <div className="insight-chart-header">
+          <div className="insights-card-header">
 
             <div>
-
-              <span className="section-label">
+              <span className="insights-section-label">
                 BUDGET ANALYSIS
               </span>
 
-              <h3>
+              <h2>
                 Monthly Budget
-              </h3>
+              </h2>
+            </div>
 
-              <p>
-                Your spending against your budget
-              </p>
-
+            <div className="insights-card-header-icon">
+              <Target size={18} />
             </div>
 
           </div>
 
-          <div className="budget-insight-content">
+          <div className="budget-insight-main">
 
             <div
-              className="budget-circle"
-              style={{
-                "--budget-progress":
-                  budgetPercentage,
-              }}
-            >
+                className="budget-circle"
+                style={{
+                  "--progress": budgetUsage * 3.6,
+                }}
+              >
 
               <div>
-
                 <strong>
                   {Math.round(
-                    budgetPercentage
+                    budgetUsage
                   )}
                   %
                 </strong>
@@ -1228,7 +532,6 @@ function AllInsights({
                 <span>
                   used
                 </span>
-
               </div>
 
             </div>
@@ -1236,311 +539,184 @@ function AllInsights({
             <div className="budget-insight-details">
 
               <div>
-
-                <span>
-                  Budget
-                </span>
+                <span>Budget</span>
 
                 <strong>
-                  {money(budget)}
+                  {formatCurrency(
+                    budget
+                  )}
                 </strong>
-
               </div>
 
               <div>
+                <span>Spent</span>
 
-                <span>
-                  Spent
-                </span>
-
-                <strong>
-                  {money(totals.expense)}
+                <strong className="expense-color">
+                  {formatCurrency(
+                    totals.expense
+                  )}
                 </strong>
-
               </div>
 
               <div>
-
-                <span>
-                  Remaining
-                </span>
+                <span>Remaining</span>
 
                 <strong
                   className={
-                    remaining < 0
-                      ? "negative"
-                      : ""
+                    remainingBudget >= 0
+                      ? "income-color"
+                      : "expense-color"
                   }
                 >
-                  {money(remaining)}
+                  {formatCurrency(
+                    remainingBudget
+                  )}
                 </strong>
-
               </div>
 
             </div>
 
           </div>
 
-        </div>
+          {budget <= 0 ? (
+            <div className="budget-warning neutral">
+              <Target size={16} />
 
-        {/* =================================================
-            TOP CATEGORY
-        ================================================= */}
-
-        <div className="insight-chart-card">
-
-          <div className="insight-chart-header">
-
-            <div>
-
-              <span className="section-label">
-                SPENDING INSIGHT
+              <span>
+                No monthly budget has been set.
               </span>
-
-              <h3>
-                Top Spending Category
-              </h3>
-
-              <p>
-                Your biggest expense area
-              </p>
-
             </div>
+          ) : remainingBudget < 0 ? (
+            <div className="budget-warning danger">
+              <ArrowDownRight size={16} />
 
-          </div>
-
-          {categoryData.length > 0 && topCategory ? (
-
-            <div className="top-category">
-
-              <div className="top-category-icon">
-                <TrendingDown size={28} />
-              </div>
-
-              <div>
-
-                <span>
-                  Highest spending
-                </span>
-
-                <strong>
-                  {topCategory.name}
-                </strong>
-
-                <p>
-                  {money(topCategory.value)}
-                </p>
-
-              </div>
-
+              <span>
+                You are{" "}
+                {formatCurrency(
+                  Math.abs(
+                    remainingBudget
+                  )
+                )}{" "}
+                over your budget.
+              </span>
             </div>
+          ) : budgetUsage >= 80 ? (
+            <div className="budget-warning warning">
+              <TrendingUp size={16} />
 
+              <span>
+                You've used most of your monthly
+                budget.
+              </span>
+            </div>
           ) : (
+            <div className="budget-warning success">
+              <ArrowUpRight size={16} />
 
-            <div className="chart-no-data">
-              No category data.
+              <span>
+                You're currently within your budget.
+              </span>
             </div>
-
           )}
-
-          {budget > 0 &&
-            totals.expense > budget && (
-
-              <div className="budget-warning">
-
-                <AlertTriangle size={18} />
-
-                <div>
-
-                  <strong>
-                    Budget exceeded
-                  </strong>
-
-                  <span>
-                    You have spent{" "}
-                    {money(
-                      totals.expense - budget
-                    )}{" "}
-                    over your budget.
-                  </span>
-
-                </div>
-
-              </div>
-
-            )}
 
         </div>
 
       </section>
 
       {/* =================================================
-          AI RECOMMENDATIONS
+          QUICK TAKEAWAYS
       ================================================= */}
 
-      <section className="ai-recommendations-card">
+      <section className="insights-card takeaways-card">
 
-        <div className="ai-recommendations-header">
+        <div className="insights-card-header">
 
-          <div className="ai-recommendation-title">
+          <div>
+            <span className="insights-section-label">
+              QUICK TAKEAWAYS
+            </span>
 
-            <div className="recommendation-icon">
-              <Lightbulb size={21} />
-            </div>
+            <h2>
+              What your numbers say
+            </h2>
+          </div>
 
-            <div>
-
-              <span className="section-label">
-                SMART RECOMMENDATIONS
-              </span>
-
-              <h3>
-                What SpendWise recommends
-              </h3>
-
-              <p>
-                Simple actions based on your
-                current financial activity.
-              </p>
-
-            </div>
-
+          <div className="insights-card-header-icon">
+            <BarChart3 size={18} />
           </div>
 
         </div>
 
-        <div className="recommendation-list">
+        <div className="takeaways-grid">
 
-          {/* RECOMMENDATION 1 */}
+          <div className="takeaway">
 
-          {topCategory && (
-
-            <div className="recommendation-item">
-
-              <div className="recommendation-number">
-                01
-              </div>
-
-              <div>
-
-                <strong>
-                  Review your{" "}
-                  {topCategory.name} spending
-                </strong>
-
-                <p>
-                  This is currently your
-                  largest expense category.
-                  Consider setting a spending
-                  limit for it.
-                </p>
-
-              </div>
-
-              <ArrowDownRight size={19} />
-
+            <div className="takeaway-icon">
+              <TrendingDown size={17} />
             </div>
 
-          )}
+            <div>
+              <strong>
+                Top spending category
+              </strong>
 
-          {/* RECOMMENDATION 2 */}
-
-          {budget > 0 &&
-            remaining > 0 && (
-
-              <div className="recommendation-item">
-
-                <div className="recommendation-number">
-                  02
-                </div>
-
-                <div>
-
-                  <strong>
-                    Protect your remaining
-                    budget
-                  </strong>
-
-                  <p>
-                    You still have{" "}
-                    {money(remaining)}{" "}
-                    available. Try to keep
-                    upcoming non-essential
-                    expenses within this amount.
-                  </p>
-
-                </div>
-
-                <Target size={19} />
-
-              </div>
-
-            )}
-
-          {/* RECOMMENDATION 3 */}
-
-          {totals.balance > 0 && (
-
-            <div className="recommendation-item">
-
-              <div className="recommendation-number">
-                03
-              </div>
-
-              <div>
-
-                <strong>
-                  Build on your positive
-                  balance
-                </strong>
-
-                <p>
-                  Your income currently exceeds
-                  your expenses. Consider
-                  directing part of the
-                  remaining balance toward
-                  savings.
-                </p>
-
-              </div>
-
-              <ArrowUpRight size={19} />
-
+              <p>
+                {topCategory
+                  ? `${topCategory.category} accounts for ${topCategory.percentage.toFixed(
+                      1
+                    )}% of your expenses.`
+                  : "No category data available."}
+              </p>
             </div>
 
-          )}
+          </div>
 
-          {/* RECOMMENDATION 3 - NEGATIVE */}
+          <div className="takeaway">
 
-          {totals.balance <= 0 && (
-
-            <div className="recommendation-item">
-
-              <div className="recommendation-number">
-                03
-              </div>
-
-              <div>
-
-                <strong>
-                  Focus on reducing
-                  unnecessary expenses
-                </strong>
-
-                <p>
-                  Review your recent
-                  transactions and identify
-                  expenses that can be reduced
-                  or postponed.
-                </p>
-
-              </div>
-
-              <ArrowDownRight size={19} />
-
+            <div className="takeaway-icon">
+              <BarChart3 size={17} />
             </div>
 
-          )}
+            <div>
+              <strong>
+                Average transaction
+              </strong>
+
+              <p>
+                Your average expense is{" "}
+                {formatCurrency(
+                  averageExpense
+                )}.
+              </p>
+            </div>
+
+          </div>
+
+          <div className="takeaway">
+
+            <div className="takeaway-icon">
+              <Wallet size={17} />
+            </div>
+
+            <div>
+              <strong>
+                Financial position
+              </strong>
+
+              <p>
+                {totals.balance >= 0
+                  ? `You have a positive balance of ${formatCurrency(
+                      totals.balance
+                    )}.`
+                  : `Your expenses exceed your income by ${formatCurrency(
+                      Math.abs(
+                        totals.balance
+                      )
+                    )}.`}
+              </p>
+            </div>
+
+          </div>
 
         </div>
 

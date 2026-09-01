@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -18,6 +17,7 @@ import {
   Save,
   Menu,
   IndianRupee,
+  Sparkles,
 } from "lucide-react";
 
 import Login from "./Login";
@@ -91,7 +91,11 @@ const formatDate = (value) => {
     return "—";
   }
 
-  return date.toLocaleDateString("en-IN");
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const getTransactionId = (transaction) => {
@@ -101,7 +105,9 @@ const getTransactionId = (transaction) => {
 const formatCurrency = (value) => {
   const amount = Number(value) || 0;
 
-  return `₹${amount.toLocaleString("en-IN")}`;
+  return `₹${amount.toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  })}`;
 };
 
 // =========================================================
@@ -138,7 +144,6 @@ function App() {
   // =======================================================
 
   const [activePage, setActivePage] = useState("dashboard");
-
   const [mobileMenu, setMobileMenu] = useState(false);
 
   // =======================================================
@@ -160,7 +165,6 @@ function App() {
   // =======================================================
 
   const [transactions, setTransactions] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
   // =======================================================
@@ -168,9 +172,7 @@ function App() {
   // =======================================================
 
   const [budget, setBudget] = useState(0);
-
   const [budgetInput, setBudgetInput] = useState("");
-
   const [budgetSaving, setBudgetSaving] = useState(false);
 
   // =======================================================
@@ -178,9 +180,7 @@ function App() {
   // =======================================================
 
   const [aiData, setAiData] = useState(null);
-
   const [aiLoading, setAiLoading] = useState(false);
-
   const [aiError, setAiError] = useState("");
 
   // =======================================================
@@ -193,14 +193,11 @@ function App() {
   const [editingTransaction, setEditingTransaction] =
     useState(null);
 
-  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showBudgetModal, setShowBudgetModal] =
+    useState(false);
 
   // =======================================================
   // TRANSACTION FORM
-  // IMPORTANT:
-  // Keep amount as STRING while typing.
-  // This prevents input problems such as deleting/replacing
-  // the value while React rerenders.
   // =======================================================
 
   const [transactionForm, setTransactionForm] = useState({
@@ -283,24 +280,21 @@ function App() {
         throw new Error("You are not logged in.");
       }
 
-      const response = await fetch(
-        `${API_URL}${endpoint}`,
-        {
-          ...options,
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
 
-          headers: {
-            ...(options.body
-              ? {
-                  "Content-Type": "application/json",
-                }
-              : {}),
+        headers: {
+          ...(options.body
+            ? {
+                "Content-Type": "application/json",
+              }
+            : {}),
 
-            Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
 
-            ...(options.headers || {}),
-          },
-        }
-      );
+          ...(options.headers || {}),
+        },
+      });
 
       const data = await response
         .json()
@@ -392,7 +386,6 @@ function App() {
         error
       );
 
-      // If no budget exists, keep budget at zero.
       setBudget(0);
       setBudgetInput("");
     }
@@ -414,7 +407,7 @@ function App() {
   }, [token, fetchTransactions]);
 
   // =======================================================
-  // BUDGET FETCH WHEN MONTH/YEAR CHANGES
+  // BUDGET FETCH
   // =======================================================
 
   useEffect(() => {
@@ -741,12 +734,10 @@ function App() {
       const amount =
         Number(amountText);
 
-      // -----------------------------------------------
-      // VALIDATION
-      // -----------------------------------------------
-
       if (!title) {
-        alert("Please enter a transaction title.");
+        alert(
+          "Please enter a transaction title."
+        );
         return;
       }
 
@@ -771,36 +762,25 @@ function App() {
           transactionForm.type
         )
       ) {
-        alert("Please select a valid transaction type.");
+        alert(
+          "Please select a valid transaction type."
+        );
         return;
       }
 
-      // -----------------------------------------------
-      // PAYLOAD
-      // -----------------------------------------------
-
       const payload = {
         title,
-
         amount,
-
         type: transactionForm.type,
-
         category:
           transactionForm.category || "Other",
-
         date: transactionForm.date,
-
         note:
           transactionForm.note.trim(),
       };
 
       try {
         setSavingTransaction(true);
-
-        // ---------------------------------------------
-        // UPDATE
-        // ---------------------------------------------
 
         if (editingTransaction) {
           const id =
@@ -821,13 +801,7 @@ function App() {
               body: JSON.stringify(payload),
             }
           );
-        }
-
-        // ---------------------------------------------
-        // ADD
-        // ---------------------------------------------
-
-        else {
+        } else {
           await apiFetch(
             "/transactions",
             {
@@ -836,10 +810,6 @@ function App() {
             }
           );
         }
-
-        // ---------------------------------------------
-        // REFRESH
-        // ---------------------------------------------
 
         await fetchTransactions();
 
@@ -875,7 +845,9 @@ function App() {
 
   const handleDelete = async (id) => {
     if (!id) {
-      alert("Transaction ID is missing.");
+      alert(
+        "Transaction ID is missing."
+      );
       return;
     }
 
@@ -993,10 +965,8 @@ function App() {
   for (
     let year =
       currentDate.getFullYear() - 4;
-
     year <=
-      currentDate.getFullYear() + 2;
-
+    currentDate.getFullYear() + 2;
     year++
   ) {
     years.push(year);
@@ -1038,13 +1008,11 @@ function App() {
       label: "Dashboard",
       icon: LayoutDashboard,
     },
-
     {
       id: "transactions",
       label: "Transactions",
       icon: Receipt,
     },
-
     {
       id: "insights",
       label: "Insights",
@@ -1066,9 +1034,7 @@ function App() {
   return (
     <div className="app-shell">
 
-      {/* =================================================
-          SIDEBAR
-      ================================================= */}
+      {/* SIDEBAR */}
 
       <aside
         className={`sidebar ${
@@ -1120,6 +1086,7 @@ function App() {
         </nav>
 
         <div className="sidebar-bottom">
+
           <div className="user-card">
             <div className="avatar">
               {user?.name
@@ -1144,23 +1111,20 @@ function App() {
             onClick={logout}
           >
             <LogOut size={18} />
-
             Logout
           </button>
+
         </div>
       </aside>
 
-      {/* =================================================
-          MAIN
-      ================================================= */}
+      {/* MAIN */}
 
       <main className="main-content">
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
 
         <header className="topbar">
+
           <button
             type="button"
             className="mobile-menu-button"
@@ -1179,7 +1143,9 @@ function App() {
               PERSONAL FINANCE
             </p>
 
-            <h2>{pageTitle}</h2>
+            <h2>
+              {pageTitle}
+            </h2>
           </div>
 
           <div className="topbar-actions">
@@ -1195,22 +1161,21 @@ function App() {
                 }
               >
                 <Plus size={18} />
-
                 Add Transaction
               </button>
             )}
           </div>
+
         </header>
 
-        {/* =================================================
-            PERIOD SELECTOR
-        ================================================= */}
+        {/* PERIOD SELECTOR */}
 
         {(activePage ===
           "dashboard" ||
           activePage ===
             "insights") && (
           <section className="period-toolbar">
+
             <div>
               <span className="toolbar-label">
                 Analysis period
@@ -1264,18 +1229,21 @@ function App() {
                     )
                   }
                 >
-                  {years.map((year) => (
-                    <option
-                      key={year}
-                      value={year}
-                    >
-                      {year}
-                    </option>
-                  ))}
+                  {years.map(
+                    (year) => (
+                      <option
+                        key={year}
+                        value={year}
+                      >
+                        {year}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
             </div>
+
           </section>
         )}
 
@@ -1288,6 +1256,7 @@ function App() {
           <div className="page-container">
 
             <section className="welcome-section">
+
               <div>
                 <p className="welcome-small">
                   Welcome back 👋
@@ -1305,6 +1274,11 @@ function App() {
                   decisions.
                 </p>
               </div>
+
+              <div className="welcome-decoration">
+                <WalletCards size={72} />
+              </div>
+
             </section>
 
             {/* STATS */}
@@ -1412,7 +1386,9 @@ function App() {
               {/* BUDGET */}
 
               <div className="glass-card budget-card">
+
                 <div className="card-header">
+
                   <div>
                     <span className="section-label">
                       MONTHLY BUDGET
@@ -1433,6 +1409,7 @@ function App() {
                   >
                     <Pencil size={17} />
                   </button>
+
                 </div>
 
                 <div className="budget-main">
@@ -1460,7 +1437,13 @@ function App() {
                   <div className="budget-amount">
                     <span>Remaining</span>
 
-                    <strong>
+                    <strong
+                      className={
+                        remainingBudget < 0
+                          ? "danger-text"
+                          : ""
+                      }
+                    >
                       {formatCurrency(
                         remainingBudget
                       )}
@@ -1470,6 +1453,7 @@ function App() {
                 </div>
 
                 <div className="progress-container">
+
                   <div className="progress-label">
                     <span>
                       Budget usage
@@ -1492,6 +1476,7 @@ function App() {
                       }}
                     />
                   </div>
+
                 </div>
 
                 <button
@@ -1507,6 +1492,7 @@ function App() {
                     ? "Update Monthly Budget"
                     : "Set Monthly Budget"}
                 </button>
+
               </div>
 
               {/* RECENT */}
@@ -1514,6 +1500,7 @@ function App() {
               <div className="glass-card recent-card">
 
                 <div className="card-header">
+
                   <div>
                     <span className="section-label">
                       RECENT ACTIVITY
@@ -1535,11 +1522,13 @@ function App() {
                   >
                     View all
                   </button>
+
                 </div>
 
                 {selectedTransactions.length ===
                 0 ? (
                   <div className="empty-state small">
+
                     <Receipt size={32} />
 
                     <p>
@@ -1556,9 +1545,9 @@ function App() {
                       }
                     >
                       <Plus size={16} />
-
                       Add Transaction
                     </button>
+
                   </div>
                 ) : (
                   <div className="recent-list">
@@ -1577,7 +1566,15 @@ function App() {
                               )
                             }
                           >
-                            <div className="transaction-symbol">
+
+                            <div
+                              className={`transaction-symbol ${
+                                transaction.type ===
+                                "income"
+                                  ? "income-symbol"
+                                  : "expense-symbol"
+                              }`}
+                            >
                               {transaction.type ===
                               "income"
                                 ? "+"
@@ -1585,6 +1582,7 @@ function App() {
                             </div>
 
                             <div className="recent-details">
+
                               <strong>
                                 {
                                   transaction.title
@@ -1602,6 +1600,7 @@ function App() {
                                   transaction.date
                                 )}
                               </span>
+
                             </div>
 
                             <strong
@@ -1621,71 +1620,126 @@ function App() {
                                 transaction.amount
                               )}
                             </strong>
+
                           </div>
                         )
                       )}
 
                   </div>
                 )}
+
               </div>
 
             </section>
 
             {/* AI STATUS */}
 
-            <section className="glass-card">
-              <div className="card-header">
-                <div>
-                  <span className="section-label">
-                    AI SERVICE
-                  </span>
+            <section className="glass-card ai-status-card">
 
-                  <h3>
-                    SpendWise AI
-                  </h3>
+              <div className="card-header">
+
+                <div className="ai-title-wrapper">
+
+                  <div className="ai-icon">
+                    <Sparkles size={19} />
+                  </div>
+
+                  <div>
+                    <span className="section-label">
+                      AI SERVICE
+                    </span>
+
+                    <h3>
+                      SpendWise AI
+                    </h3>
+                  </div>
+
                 </div>
+
+                <span
+                  className={`ai-status-pill ${
+                    aiLoading
+                      ? "processing"
+                      : aiError
+                      ? "offline"
+                      : aiData
+                      ? "online"
+                      : ""
+                  }`}
+                >
+                  {aiLoading
+                    ? "Processing"
+                    : aiError
+                    ? "Offline"
+                    : aiData
+                    ? "Connected"
+                    : "Waiting"}
+                </span>
+
               </div>
 
               {aiLoading && (
-                <p>
-                  Processing your transactions with AI...
-                </p>
+                <div className="ai-message">
+                  <div className="loading-dot" />
+                  <p>
+                    Processing your transactions
+                    with SpendWise AI...
+                  </p>
+                </div>
               )}
 
-              {!aiLoading && aiError && (
-                <p>
-                  AI service unavailable:{" "}
-                  {aiError}
-                </p>
-              )}
+              {!aiLoading &&
+                aiError && (
+                  <div className="ai-message error">
+                    <p>
+                      AI service unavailable:{" "}
+                      {aiError}
+                    </p>
+                  </div>
+                )}
 
               {!aiLoading &&
                 !aiError &&
                 aiData && (
-                  <div>
-                    <p>
-                      AI processing completed successfully.
-                    </p>
+                  <div className="ai-results">
 
-                    <p>
-                      Processed transactions:{" "}
+                    <div className="ai-result">
+                      <span>
+                        Processed transactions
+                      </span>
+
                       <strong>
                         {
                           aiData.transactionCount
                         }
                       </strong>
-                    </p>
+                    </div>
 
-                    <p>
-                      Average expense:{" "}
+                    <div className="ai-result">
+                      <span>
+                        Average expense
+                      </span>
+
                       <strong>
                         {formatCurrency(
                           aiData.averageExpense
                         )}
                       </strong>
-                    </p>
+                    </div>
+
+                    <div className="ai-result">
+                      <span>
+                        AI status
+                      </span>
+
+                      <strong>
+                        Analysis ready
+                      </strong>
+                    </div>
+
                   </div>
                 )}
+
             </section>
 
           </div>
@@ -1700,7 +1754,12 @@ function App() {
           <div className="page-container">
 
             <section className="transactions-intro">
+
               <div>
+                <p className="welcome-small">
+                  FINANCIAL RECORDS
+                </p>
+
                 <h1>
                   Your Transactions
                 </h1>
@@ -1712,6 +1771,7 @@ function App() {
               </div>
 
               <div className="transaction-summary">
+
                 <div>
                   <span>
                     Transactions
@@ -1735,12 +1795,15 @@ function App() {
                     )}
                   </strong>
                 </div>
+
               </div>
+
             </section>
 
             <section className="glass-card transaction-table-card">
 
               <div className="card-header">
+
                 <div>
                   <span className="section-label">
                     {months[
@@ -1762,13 +1825,14 @@ function App() {
                   }
                 >
                   <Plus size={18} />
-
                   Add Transaction
                 </button>
+
               </div>
 
               {loading ? (
                 <div className="loading-state">
+                  <div className="spinner" />
                   Loading transactions...
                 </div>
               ) : selectedTransactions.length ===
@@ -1796,7 +1860,6 @@ function App() {
                     }
                   >
                     <Plus size={18} />
-
                     Add Transaction
                   </button>
 
@@ -1805,6 +1868,7 @@ function App() {
                 <div className="table-wrapper">
 
                   <table>
+
                     <thead>
                       <tr>
                         <th>
@@ -1834,6 +1898,7 @@ function App() {
                     </thead>
 
                     <tbody>
+
                       {selectedTransactions.map(
                         (
                           transaction
@@ -1843,7 +1908,9 @@ function App() {
                               transaction
                             )}
                           >
+
                             <td>
+
                               <div className="table-title">
 
                                 <div className="mini-icon">
@@ -1853,6 +1920,7 @@ function App() {
                                 </div>
 
                                 <div>
+
                                   <strong>
                                     {
                                       transaction.title
@@ -1866,9 +1934,11 @@ function App() {
                                       }
                                     </span>
                                   )}
+
                                 </div>
 
                               </div>
+
                             </td>
 
                             <td>
@@ -1886,6 +1956,7 @@ function App() {
                             </td>
 
                             <td>
+
                               <span
                                 className={`type-badge ${
                                   transaction.type
@@ -1895,9 +1966,11 @@ function App() {
                                   transaction.type
                                 }
                               </span>
+
                             </td>
 
                             <td>
+
                               <strong
                                 className={
                                   transaction.type ===
@@ -1915,9 +1988,11 @@ function App() {
                                   transaction.amount
                                 )}
                               </strong>
+
                             </td>
 
                             <td>
+
                               <div className="row-actions">
 
                                 <button
@@ -1953,17 +2028,22 @@ function App() {
                                 </button>
 
                               </div>
+
                             </td>
+
                           </tr>
                         )
                       )}
+
                     </tbody>
+
                   </table>
 
                 </div>
               )}
 
             </section>
+
           </div>
         )}
 
@@ -1991,6 +2071,15 @@ function App() {
               budget={
                 budget
               }
+
+              aiData={
+                aiData
+              }
+
+              aiLoading={
+                aiLoading
+              }
+
             />
 
           </div>
@@ -2014,9 +2103,11 @@ function App() {
             }
           }}
         >
+
           <div className="modal">
 
             <div className="modal-header">
+
               <div>
                 <span className="section-label">
                   TRANSACTION
@@ -2035,10 +2126,13 @@ function App() {
                 onClick={
                   closeTransactionModal
                 }
-                disabled={savingTransaction}
+                disabled={
+                  savingTransaction
+                }
               >
                 <X size={20} />
               </button>
+
             </div>
 
             <form
@@ -2047,9 +2141,8 @@ function App() {
               }
             >
 
-              {/* TITLE */}
-
               <div className="form-group">
+
                 <label htmlFor="transaction-title">
                   Title
                 </label>
@@ -2068,18 +2161,19 @@ function App() {
                   autoComplete="off"
                   autoFocus
                 />
-              </div>
 
-              {/* AMOUNT + TYPE */}
+              </div>
 
               <div className="form-grid">
 
                 <div className="form-group">
+
                   <label htmlFor="transaction-amount">
                     Amount
                   </label>
 
                   <div className="input-with-icon">
+
                     <IndianRupee
                       size={17}
                     />
@@ -2099,10 +2193,13 @@ function App() {
                       step="0.01"
                       inputMode="decimal"
                     />
+
                   </div>
+
                 </div>
 
                 <div className="form-group">
+
                   <label htmlFor="transaction-type">
                     Type
                   </label>
@@ -2125,15 +2222,15 @@ function App() {
                       Income
                     </option>
                   </select>
+
                 </div>
 
               </div>
 
-              {/* CATEGORY + DATE */}
-
               <div className="form-grid">
 
                 <div className="form-group">
+
                   <label htmlFor="transaction-category">
                     Category
                   </label>
@@ -2159,9 +2256,11 @@ function App() {
                       )
                     )}
                   </select>
+
                 </div>
 
                 <div className="form-group">
+
                   <label htmlFor="transaction-date">
                     Date
                   </label>
@@ -2177,13 +2276,13 @@ function App() {
                       handleFormChange
                     }
                   />
+
                 </div>
 
               </div>
 
-              {/* NOTE */}
-
               <div className="form-group">
+
                 <label htmlFor="transaction-note">
                   Note
                 </label>
@@ -2200,9 +2299,8 @@ function App() {
                   placeholder="Add an optional note..."
                   rows={3}
                 />
-              </div>
 
-              {/* ACTIONS */}
+              </div>
 
               <div className="modal-actions">
 
@@ -2212,7 +2310,9 @@ function App() {
                   onClick={
                     closeTransactionModal
                   }
-                  disabled={savingTransaction}
+                  disabled={
+                    savingTransaction
+                  }
                 >
                   Cancel
                 </button>
@@ -2220,8 +2320,11 @@ function App() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={savingTransaction}
+                  disabled={
+                    savingTransaction
+                  }
                 >
+
                   <Save size={17} />
 
                   {savingTransaction
@@ -2229,12 +2332,15 @@ function App() {
                     : editingTransaction
                     ? "Update Transaction"
                     : "Save Transaction"}
+
                 </button>
 
               </div>
 
             </form>
+
           </div>
+
         </div>
       )}
 
@@ -2258,9 +2364,11 @@ function App() {
             }
           }}
         >
+
           <div className="modal budget-modal">
 
             <div className="modal-header">
+
               <div>
                 <span className="section-label">
                   MONTHLY BUDGET
@@ -2279,16 +2387,21 @@ function App() {
                     false
                   )
                 }
-                disabled={budgetSaving}
+                disabled={
+                  budgetSaving
+                }
               >
                 <X size={20} />
               </button>
+
             </div>
 
             <div className="budget-modal-period">
+
               <CalendarDays size={20} />
 
               <div>
+
                 <span>
                   Budget period
                 </span>
@@ -2297,7 +2410,9 @@ function App() {
                   {months[selectedMonth]}{" "}
                   {selectedYear}
                 </strong>
+
               </div>
+
             </div>
 
             <form
@@ -2305,11 +2420,13 @@ function App() {
             >
 
               <div className="form-group">
+
                 <label htmlFor="budget-input">
                   Monthly budget amount
                 </label>
 
                 <div className="large-money-input">
+
                   <span>₹</span>
 
                   <input
@@ -2329,7 +2446,9 @@ function App() {
                     inputMode="decimal"
                     autoFocus
                   />
+
                 </div>
+
               </div>
 
               <p className="budget-helper">
@@ -2348,7 +2467,9 @@ function App() {
                       false
                     )
                   }
-                  disabled={budgetSaving}
+                  disabled={
+                    budgetSaving
+                  }
                 >
                   Cancel
                 </button>
@@ -2356,13 +2477,17 @@ function App() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={budgetSaving}
+                  disabled={
+                    budgetSaving
+                  }
                 >
+
                   <Save size={17} />
 
                   {budgetSaving
                     ? "Saving..."
                     : "Save Budget"}
+
                 </button>
 
               </div>
@@ -2370,6 +2495,7 @@ function App() {
             </form>
 
           </div>
+
         </div>
       )}
 
@@ -2378,4 +2504,3 @@ function App() {
 }
 
 export default App;
-
