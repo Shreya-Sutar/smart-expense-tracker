@@ -1,16 +1,57 @@
-# React + Vite
+# SpendWise Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+SpendWise is a modern personal expense management application built with React and Vite.
 
-Currently, two official plugins are available:
+The frontend provides an interactive dashboard for managing transactions, tracking budgets, and viewing AI-powered spending insights.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🚀 Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 🔐 User Login and Registration
+- 📊 Financial Dashboard
+- 💰 Income and Expense Tracking
+- ➕ Add Transactions
+- ✏️ Edit Transactions
+- 🗑️ Delete Transactions
+- 📅 Monthly and Yearly Transaction Filtering
+- 💳 Monthly Budget Management
+- 📈 Budget Usage Tracking
+- 🤖 AI Spending Insights
+- 📊 Expense Analytics and Visualizations
+- 📱 Responsive UI
+- 🎨 Modern and Minimalistic User Interface
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 🛠️ Technologies Used
+
+- React
+- Vite
+- JavaScript
+- CSS
+- Lucide React
+- Recharts
+- Fetch API
+
+---
+
+## 📂 Frontend Structure
+
+```text
+frontend/
+│
+├── src/
+│   ├── App.jsx
+│   ├── App.css
+│   ├── AllInsights.jsx
+│   ├── AllInsights.css
+│   ├── Login.jsx
+│   ├── Register.jsx
+│   └── ...
+│
+├── public/
+├── package.json
+├── package-lock.json
+├── vite.config.js
+└── README.md
