@@ -5,18 +5,58 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  CalendarDays,
   Sparkles,
   Target,
-  PieChart,
+  PieChart as PieChartIcon,
   Activity,
+  AlertCircle,
+  Brain,
 } from "lucide-react";
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  Legend,
+} from "recharts";
 
 import "./AllInsights.css";
 
-// =========================================================
-// HELPERS
-// =========================================================
+const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const categories = [
+  "Food",
+  "Shopping",
+  "Transport",
+  "Bills",
+  "Entertainment",
+  "Health",
+  "Education",
+  "Travel",
+  "Other",
+];
 
 const formatCurrency = (value) => {
   const amount = Number(value) || 0;
@@ -26,64 +66,64 @@ const formatCurrency = (value) => {
   })}`;
 };
 
-const formatShortCurrency = (value) => {
-  const amount = Number(value) || 0;
+const getTransactionId = (transaction, index) => {
+  return String(
+    transaction?._id ||
+      transaction?.id ||
+      `transaction-${index}`
+  );
+};
 
-  if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`;
+const getSafeDate = (value) => {
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
   }
 
-  if (amount >= 1000) {
-    return `₹${(amount / 1000).toFixed(1)}K`;
-  }
-
-  return `₹${Math.round(amount)}`;
+  return date;
 };
-
-const getTransactionDate = (transaction) => {
-  if (!transaction?.date) return null;
-
-  const date = new Date(transaction.date);
-
-  return Number.isNaN(date.getTime()) ? null : date;
-};
-
-const getCategoryColorClass = (index) => {
-  return `category-color-${index % 8}`;
-};
-
-// =========================================================
-// COMPONENT
-// =========================================================
 
 function AllInsights({
   transactions = [],
-  selectedMonth,
-  selectedYear,
+  selectedMonth = new Date().getMonth(),
+  selectedYear = new Date().getFullYear(),
   budget = 0,
   aiData = null,
   aiLoading = false,
 }) {
-  // =======================================================
+  // =========================================================
   // SELECTED MONTH TRANSACTIONS
-  // =======================================================
+  // =========================================================
 
   const selectedTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const date = getTransactionDate(transaction);
+    if (!Array.isArray(transactions)) {
+      return [];
+    }
 
-      if (!date) return false;
+    return transactions.filter((transaction) => {
+      const date = getSafeDate(transaction?.date);
+
+      if (!date) {
+        return false;
+      }
 
       return (
-        date.getMonth() === selectedMonth &&
-        date.getFullYear() === selectedYear
+        date.getMonth() === Number(selectedMonth) &&
+        date.getFullYear() === Number(selectedYear)
       );
     });
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [
+    transactions,
+    selectedMonth,
+    selectedYear,
+  ]);
 
-  // =======================================================
+  // =========================================================
   // TOTALS
-  // =======================================================
+  // =========================================================
 
   const totals = useMemo(() => {
     let income = 0;
@@ -106,246 +146,329 @@ function AllInsights({
     };
   }, [selectedTransactions]);
 
-  // =======================================================
+  // =========================================================
   // CATEGORY DATA
-  // =======================================================
+  // =========================================================
 
   const categoryData = useMemo(() => {
-    const map = {};
+    const categoryTotals = {};
 
-    selectedTransactions
-      .filter(
-        (transaction) =>
-          transaction?.type !== "income"
-      )
-      .forEach((transaction) => {
-        const category =
-          transaction?.category || "Other";
-
-        const amount =
-          Number(transaction?.amount) || 0;
-
-        map[category] =
-          (map[category] || 0) + amount;
-      });
-
-    return Object.entries(map)
-      .map(([category, amount]) => ({
-        category,
-        amount,
-      }))
-      .sort((a, b) => b.amount - a.amount);
-  }, [selectedTransactions]);
-
-  const maxCategoryAmount = useMemo(() => {
-    return Math.max(
-      ...categoryData.map((item) => item.amount),
-      1
-    );
-  }, [categoryData]);
-
-  // =======================================================
-  // DAILY EXPENSE DATA
-  // =======================================================
-
-  const dailyData = useMemo(() => {
-    const daysInMonth = new Date(
-      selectedYear,
-      selectedMonth + 1,
-      0
-    ).getDate();
-
-    const daily = Array.from(
-      { length: daysInMonth },
-      (_, index) => ({
-        day: index + 1,
-        amount: 0,
-      })
-    );
+    categories.forEach((category) => {
+      categoryTotals[category] = 0;
+    });
 
     selectedTransactions.forEach((transaction) => {
-      if (transaction?.type === "income") {
+      if (transaction?.type !== "expense") {
         return;
       }
 
-      const date =
-        getTransactionDate(transaction);
+      const category =
+        transaction?.category &&
+        categories.includes(transaction.category)
+          ? transaction.category
+          : "Other";
 
-      if (!date) return;
+      categoryTotals[category] +=
+        Number(transaction?.amount) || 0;
+    });
+
+    return categories
+      .map((category) => ({
+        name: category,
+        value: Number(
+          categoryTotals[category].toFixed(2)
+        ),
+      }))
+      .filter((item) => item.value > 0);
+  }, [selectedTransactions]);
+
+  // =========================================================
+  // DAILY SPENDING DATA
+  // =========================================================
+
+  const dailyData = useMemo(() => {
+    const daysInMonth = new Date(
+      Number(selectedYear),
+      Number(selectedMonth) + 1,
+      0
+    ).getDate();
+
+    const dailyTotals = {};
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      dailyTotals[day] = {
+        expense: 0,
+        income: 0,
+      };
+    }
+
+    selectedTransactions.forEach((transaction) => {
+      const date = getSafeDate(transaction?.date);
+
+      if (!date) {
+        return;
+      }
 
       const day = date.getDate();
-      const amount =
-        Number(transaction?.amount) || 0;
+      const amount = Number(transaction?.amount) || 0;
 
-      if (daily[day - 1]) {
-        daily[day - 1].amount += amount;
+      if (transaction?.type === "income") {
+        dailyTotals[day].income += amount;
+      } else {
+        dailyTotals[day].expense += amount;
       }
     });
 
-    return daily;
+    return Object.entries(dailyTotals).map(
+      ([day, values]) => ({
+        day: Number(day),
+        expense: Number(values.expense.toFixed(2)),
+        income: Number(values.income.toFixed(2)),
+      })
+    );
   }, [
     selectedTransactions,
     selectedMonth,
     selectedYear,
   ]);
 
-  const maxDailyAmount = useMemo(() => {
-    return Math.max(
-      ...dailyData.map((item) => item.amount),
-      1
-    );
-  }, [dailyData]);
+  // =========================================================
+  // CATEGORY BAR DATA
+  // =========================================================
 
-  const highestSpendingDay = useMemo(() => {
-    if (!dailyData.length) {
+  const categoryBarData = useMemo(() => {
+    return categories.map((category) => {
+      const matching = selectedTransactions.filter(
+        (transaction) =>
+          transaction?.type !== "income" &&
+          (transaction?.category === category ||
+            (!transaction?.category &&
+              category === "Other"))
+      );
+
+      const amount = matching.reduce(
+        (sum, transaction) =>
+          sum + (Number(transaction?.amount) || 0),
+        0
+      );
+
       return {
-        day: 0,
-        amount: 0,
+        category,
+        amount: Number(amount.toFixed(2)),
       };
+    });
+  }, [selectedTransactions]);
+
+  // =========================================================
+  // TRANSACTION TYPE DATA
+  // =========================================================
+
+  const typeData = useMemo(() => {
+    const income = selectedTransactions.filter(
+      (transaction) =>
+        transaction?.type === "income"
+    ).length;
+
+    const expense = selectedTransactions.filter(
+      (transaction) =>
+        transaction?.type !== "income"
+    ).length;
+
+    return [
+      {
+        name: "Income",
+        value: income,
+      },
+      {
+        name: "Expenses",
+        value: expense,
+      },
+    ].filter((item) => item.value > 0);
+  }, [selectedTransactions]);
+
+  // =========================================================
+  // TOP CATEGORY
+  // =========================================================
+
+  const topCategory = useMemo(() => {
+    if (categoryData.length === 0) {
+      return null;
     }
 
-    return dailyData.reduce(
-      (highest, current) =>
-        current.amount > highest.amount
-          ? current
-          : highest,
-      dailyData[0]
+    return [...categoryData].sort(
+      (a, b) => b.value - a.value
+    )[0];
+  }, [categoryData]);
+
+  // =========================================================
+  // AVERAGE EXPENSE
+  // =========================================================
+
+  const averageExpense = useMemo(() => {
+    const expenseTransactions =
+      selectedTransactions.filter(
+        (transaction) =>
+          transaction?.type !== "income"
+      );
+
+    if (expenseTransactions.length === 0) {
+      return 0;
+    }
+
+    return (
+      totals.expense /
+      expenseTransactions.length
     );
-  }, [dailyData]);
+  }, [
+    selectedTransactions,
+    totals.expense,
+  ]);
 
-  // =======================================================
-  // SAVING RATE
-  // =======================================================
-
-  const savingRate =
-    totals.income > 0
-      ? ((totals.income - totals.expense) /
-          totals.income) *
-        100
-      : 0;
-
-  // =======================================================
+  // =========================================================
   // BUDGET
-  // =======================================================
+  // =========================================================
 
-  const budgetUsage =
-    budget > 0
-      ? (totals.expense / budget) * 100
-      : 0;
+  const budgetUsedPercentage = useMemo(() => {
+    if (!Number(budget) || Number(budget) <= 0) {
+      return 0;
+    }
+
+    return Math.min(
+      (totals.expense / Number(budget)) * 100,
+      100
+    );
+  }, [budget, totals.expense]);
 
   const remainingBudget =
     Number(budget) - totals.expense;
 
-  // =======================================================
-  // BAR CHART WIDTH
-  // =======================================================
+  // =========================================================
+  // SPENDING INSIGHT
+  // =========================================================
 
-  const incomeBar =
-    totals.income > 0
-      ? Math.min(
-          (totals.income /
-            Math.max(
-              totals.income,
-              totals.expense,
-              1
-            )) *
-            100,
-          100
-        )
-      : 0;
+  const spendingMessage = useMemo(() => {
+    if (selectedTransactions.length === 0) {
+      return "Add some transactions to generate personalized spending insights.";
+    }
 
-  const expenseBar =
-    totals.expense > 0
-      ? Math.min(
-          (totals.expense /
-            Math.max(
-              totals.income,
-              totals.expense,
-              1
-            )) *
-            100,
-          100
-        )
-      : 0;
+    if (
+      budget > 0 &&
+      totals.expense > Number(budget)
+    ) {
+      return `You have exceeded your monthly budget by ${formatCurrency(
+        totals.expense - Number(budget)
+      )}. Consider reducing spending in your highest-spending category.`;
+    }
 
-  // =======================================================
-  // EMPTY STATE
-  // =======================================================
+    if (
+      budget > 0 &&
+      budgetUsedPercentage >= 80
+    ) {
+      return `You have used ${Math.round(
+        budgetUsedPercentage
+      )}% of your monthly budget. Keep an eye on your remaining spending.`;
+    }
 
-  const hasTransactions =
-    selectedTransactions.length > 0;
+    if (topCategory) {
+      return `${topCategory.name} is currently your highest spending category at ${formatCurrency(
+        topCategory.value
+      )}.`;
+    }
 
-  // =======================================================
-  // RENDER
-  // =======================================================
+    return "Your spending is being analyzed based on your recent transactions.";
+  }, [
+    selectedTransactions.length,
+    budget,
+    totals.expense,
+    budgetUsedPercentage,
+    topCategory,
+  ]);
+
+  // =========================================================
+  // TOOLTIP
+  // =========================================================
+
+  const currencyTooltipFormatter = (value) => {
+    return formatCurrency(value);
+  };
+
+  // =========================================================
+  // PIE COLORS
+  // =========================================================
+
+  const pieColors = [
+    "#7c3aed",
+    "#2563eb",
+    "#06b6d4",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#ec4899",
+    "#8b5cf6",
+    "#64748b",
+  ];
 
   return (
     <div className="insights-page">
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
+      {/* =====================================================
+          PAGE INTRO
+      ===================================================== */}
 
       <section className="insights-hero">
 
         <div className="insights-hero-content">
 
-          <div className="insights-eyebrow">
-            <Sparkles size={16} />
-            POWERED BY SPENDWISE AI
+          <div className="insights-hero-icon">
+            <Sparkles size={26} />
           </div>
 
-          <h1>
-            Your spending insights
-          </h1>
+          <div>
 
-          <p>
-            Understand your financial habits,
-            discover spending patterns and make
-            smarter decisions.
-          </p>
+            <span className="insights-eyebrow">
+              AI-POWERED FINANCIAL ANALYSIS
+            </span>
+
+            <h1>
+              Spending Insights
+            </h1>
+
+            <p>
+              Understand where your money goes,
+              identify spending patterns and make
+              smarter financial decisions.
+            </p>
+
+          </div>
 
         </div>
 
-        <div className="insights-hero-icon">
-          <BarChart3 size={54} />
+        <div className="insights-period">
+
+          <CalendarIcon />
+
+          <div>
+            <span>Analysis period</span>
+
+            <strong>
+              {months[selectedMonth]}{" "}
+              {selectedYear}
+            </strong>
+          </div>
+
         </div>
 
       </section>
 
-      {/* =================================================
+      {/* =====================================================
           SUMMARY CARDS
-      ================================================= */}
+      ===================================================== */}
 
       <section className="insights-summary-grid">
 
-        <div className="insight-summary-card">
+        <div className="insight-stat-card">
 
-          <div className="summary-icon income-icon">
-            <TrendingUp size={21} />
-          </div>
-
-          <div>
-            <span>Total income</span>
-
-            <strong>
-              {formatCurrency(totals.income)}
-            </strong>
-
-            <small>
-              {selectedTransactions.filter(
-                (transaction) =>
-                  transaction.type === "income"
-              ).length}{" "}
-              income records
-            </small>
-          </div>
-
-        </div>
-
-        <div className="insight-summary-card">
-
-          <div className="summary-icon expense-icon">
+          <div className="insight-stat-icon expense-icon">
             <TrendingDown size={21} />
           </div>
 
@@ -353,37 +476,57 @@ function AllInsights({
             <span>Total spending</span>
 
             <strong>
-              {formatCurrency(totals.expense)}
+              {formatCurrency(
+                totals.expense
+              )}
             </strong>
 
             <small>
               {selectedTransactions.filter(
                 (transaction) =>
-                  transaction.type !== "income"
+                  transaction?.type !== "income"
               ).length}{" "}
-              expense records
+              expense transactions
             </small>
           </div>
 
         </div>
 
-        <div className="insight-summary-card">
+        <div className="insight-stat-card">
 
-          <div className="summary-icon balance-icon">
+          <div className="insight-stat-icon income-icon">
+            <TrendingUp size={21} />
+          </div>
+
+          <div>
+            <span>Total income</span>
+
+            <strong>
+              {formatCurrency(
+                totals.income
+              )}
+            </strong>
+
+            <small>
+              This month
+            </small>
+          </div>
+
+        </div>
+
+        <div className="insight-stat-card">
+
+          <div className="insight-stat-icon balance-icon">
             <Wallet size={21} />
           </div>
 
           <div>
             <span>Net balance</span>
 
-            <strong
-              className={
-                totals.balance < 0
-                  ? "negative-value"
-                  : ""
-              }
-            >
-              {formatCurrency(totals.balance)}
+            <strong>
+              {formatCurrency(
+                totals.balance
+              )}
             </strong>
 
             <small>
@@ -393,25 +536,23 @@ function AllInsights({
 
         </div>
 
-        <div className="insight-summary-card">
+        <div className="insight-stat-card">
 
-          <div className="summary-icon ai-summary-icon">
-            <Sparkles size={21} />
+          <div className="insight-stat-icon average-icon">
+            <Activity size={21} />
           </div>
 
           <div>
-            <span>Saving rate</span>
+            <span>Average expense</span>
 
             <strong>
-              {Math.max(
-                0,
-                savingRate
-              ).toFixed(1)}
-              %
+              {formatCurrency(
+                averageExpense
+              )}
             </strong>
 
             <small>
-              Based on recorded income
+              Per transaction
             </small>
           </div>
 
@@ -419,787 +560,864 @@ function AllInsights({
 
       </section>
 
-      {!hasTransactions ? (
-        /* =================================================
-           EMPTY
-        ================================================= */
+      {/* =====================================================
+          AI INSIGHT
+      ===================================================== */}
 
-        <section className="insights-empty">
+      <section className="ai-insight-banner">
 
-          <div className="empty-chart-icon">
-            <BarChart3 size={38} />
+        <div className="ai-insight-left">
+
+          <div className="ai-brain-icon">
+            <Brain size={24} />
           </div>
 
-          <h2>
-            No spending data yet
-          </h2>
+          <div>
 
-          <p>
-            Add transactions for{" "}
-            {new Date(
-              selectedYear,
-              selectedMonth
-            ).toLocaleDateString("en-IN", {
-              month: "long",
-              year: "numeric",
-            })}{" "}
-            to generate your AI spending insights
-            and graphs.
-          </p>
+            <span>
+              SPENDWISE AI
+            </span>
 
-        </section>
-      ) : (
-        <>
-          {/* =================================================
-              KEY INSIGHTS
-          ================================================= */}
+            <h3>
+              Personalized spending insight
+            </h3>
 
-          <section className="insight-highlights">
+            <p>
+              {aiLoading
+                ? "Analyzing your transactions..."
+                : spendingMessage}
+            </p>
 
-            <div className="highlight-card">
+          </div>
 
-              <div className="highlight-icon purple">
-                <PieChart size={21} />
-              </div>
+        </div>
 
-              <div>
-                <span>
-                  TOP SPENDING CATEGORY
-                </span>
+        <div className="ai-status">
 
-                <h3>
-                  {categoryData[0]?.category ||
-                    "No data"}
-                </h3>
+          <Sparkles size={16} />
 
-                <p>
-                  {categoryData[0]
-                    ? `${(
-                        (categoryData[0]
-                          .amount /
-                          totals.expense) *
-                        100
-                      ).toFixed(1)}% of your total spending.`
-                    : "Add expenses to see your top category."}
-                </p>
-              </div>
+          {aiLoading
+            ? "Analyzing"
+            : aiData
+            ? "AI Connected"
+            : "Smart Analysis"}
 
-            </div>
+        </div>
 
-            <div className="highlight-card">
+      </section>
 
-              <div className="highlight-icon green">
-                <TrendingUp size={21} />
-              </div>
+      {/* =====================================================
+          CHART ROW 1
+      ===================================================== */}
 
-              <div>
-                <span>
-                  SAVINGS RATE
-                </span>
+      <section className="charts-grid">
 
-                <h3>
-                  {Math.max(
-                    0,
-                    savingRate
-                  ).toFixed(1)}
-                  %
-                </h3>
+        {/* CATEGORY PIE CHART */}
 
-                <p>
-                  {totals.income > 0
-                    ? `You are saving approximately ${Math.max(
-                        0,
-                        savingRate
-                      ).toFixed(
-                        1
-                      )}% of your recorded income.`
-                    : "Add income to calculate your savings rate."}
-                </p>
-              </div>
+        <div className="chart-card">
 
-            </div>
-
-            <div className="highlight-card">
-
-              <div className="highlight-icon orange">
-                <Activity size={21} />
-              </div>
-
-              <div>
-                <span>
-                  HIGHEST SPENDING DAY
-                </span>
-
-                <h3>
-                  {highestSpendingDay.amount >
-                  0
-                    ? `Day ${highestSpendingDay.day}`
-                    : "No data"}
-                </h3>
-
-                <p>
-                  {highestSpendingDay.amount >
-                  0
-                    ? `Your highest spending was ${formatCurrency(
-                        highestSpendingDay.amount
-                      )}.`
-                    : "No daily spending recorded."}
-                </p>
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* =================================================
-              CATEGORY + INCOME EXPENSE
-          ================================================= */}
-
-          <section className="chart-grid">
-
-            {/* CATEGORY BAR GRAPH */}
-
-            <div className="insight-card">
-
-              <div className="chart-header">
-
-                <div>
-                  <span className="insight-section-label">
-                    SPENDING BREAKDOWN
-                  </span>
-
-                  <h2>
-                    Expenses by category
-                  </h2>
-
-                  <p>
-                    Where your money is going
-                  </p>
-                </div>
-
-                <div className="chart-header-icon">
-                  <PieChart size={21} />
-                </div>
-
-              </div>
-
-              {categoryData.length === 0 ? (
-                <div className="chart-empty">
-                  No expense data available.
-                </div>
-              ) : (
-                <div className="category-chart">
-
-                  {categoryData.map(
-                    (
-                      item,
-                      index
-                    ) => {
-                      const percentage =
-                        totals.expense >
-                        0
-                          ? (item.amount /
-                              totals.expense) *
-                            100
-                          : 0;
-
-                      return (
-                        <div
-                          className="category-row"
-                          key={
-                            item.category
-                          }
-                        >
-
-                          <div className="category-row-top">
-
-                            <div className="category-name">
-
-                              <span
-                                className={`category-dot ${getCategoryColorClass(
-                                  index
-                                )}`}
-                              />
-
-                              <strong>
-                                {
-                                  item.category
-                                }
-                              </strong>
-
-                            </div>
-
-                            <div className="category-values">
-
-                              <strong>
-                                {formatCurrency(
-                                  item.amount
-                                )}
-                              </strong>
-
-                              <span>
-                                {percentage.toFixed(
-                                  1
-                                )}
-                                %
-                              </span>
-
-                            </div>
-
-                          </div>
-
-                          <div className="category-bar-track">
-
-                            <div
-                              className={`category-bar-fill ${getCategoryColorClass(
-                                index
-                              )}`}
-                              style={{
-                                width: `${Math.max(
-                                  2,
-                                  (item.amount /
-                                    maxCategoryAmount) *
-                                    100
-                                )}%`,
-                              }}
-                            />
-
-                          </div>
-
-                        </div>
-                      );
-                    }
-                  )}
-
-                </div>
-              )}
-
-            </div>
-
-            {/* INCOME VS EXPENSE */}
-
-            <div className="insight-card">
-
-              <div className="chart-header">
-
-                <div>
-                  <span className="insight-section-label">
-                    CASH FLOW
-                  </span>
-
-                  <h2>
-                    Income vs expenses
-                  </h2>
-
-                  <p>
-                    Compare your money coming in
-                    and going out
-                  </p>
-                </div>
-
-                <div className="chart-header-icon">
-                  <TrendingUp size={21} />
-                </div>
-
-              </div>
-
-              <div className="cash-flow-chart">
-
-                <div className="cash-flow-total">
-
-                  <span>
-                    Net balance
-                  </span>
-
-                  <strong>
-                    {formatCurrency(
-                      totals.balance
-                    )}
-                  </strong>
-
-                </div>
-
-                <div className="comparison-bars">
-
-                  <div className="comparison-item">
-
-                    <div className="comparison-label">
-                      <span>
-                        Income
-                      </span>
-
-                      <strong>
-                        {formatCurrency(
-                          totals.income
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="comparison-track">
-
-                      <div
-                        className="comparison-fill income-fill"
-                        style={{
-                          width: `${incomeBar}%`,
-                        }}
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <div className="comparison-item">
-
-                    <div className="comparison-label">
-                      <span>
-                        Expenses
-                      </span>
-
-                      <strong>
-                        {formatCurrency(
-                          totals.expense
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="comparison-track">
-
-                      <div
-                        className="comparison-fill expense-fill"
-                        style={{
-                          width: `${expenseBar}%`,
-                        }}
-                      />
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                <div className="cash-flow-legend">
-
-                  <div>
-                    <span className="legend-dot income-dot" />
-                    Income
-                  </div>
-
-                  <div>
-                    <span className="legend-dot expense-dot" />
-                    Expenses
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* =================================================
-              DAILY EXPENSE GRAPH
-          ================================================= */}
-
-          <section className="insight-card daily-chart-card">
-
-            <div className="chart-header">
-
-              <div>
-                <span className="insight-section-label">
-                  SPENDING ACTIVITY
-                </span>
-
-                <h2>
-                  Daily expense pattern
-                </h2>
-
-                <p>
-                  Track how your spending changed
-                  throughout the month
-                </p>
-              </div>
-
-              <div className="chart-header-icon">
-                <BarChart3 size={21} />
-              </div>
-
-            </div>
-
-            <div className="daily-chart-wrapper">
-
-              <div className="y-axis">
-
-                <span>
-                  {formatShortCurrency(
-                    maxDailyAmount
-                  )}
-                </span>
-
-                <span>
-                  {formatShortCurrency(
-                    maxDailyAmount / 2
-                  )}
-                </span>
-
-                <span>
-                  ₹0
-                </span>
-
-              </div>
-
-              <div className="daily-chart">
-
-                <div className="grid-line line-top" />
-                <div className="grid-line line-middle" />
-                <div className="grid-line line-bottom" />
-
-                <div className="bars">
-
-                  {dailyData.map(
-                    (item) => {
-                      const height =
-                        item.amount > 0
-                          ? Math.max(
-                              5,
-                              (item.amount /
-                                maxDailyAmount) *
-                                100
-                            )
-                          : 0;
-
-                      return (
-                        <div
-                          className="daily-bar-wrapper"
-                          key={item.day}
-                          title={`Day ${item.day}: ${formatCurrency(
-                            item.amount
-                          )}`}
-                        >
-
-                          <div
-                            className={`daily-bar ${
-                              item.amount ===
-                              highestSpendingDay.amount &&
-                              item.amount > 0
-                                ? "highest-day"
-                                : ""
-                            }`}
-                            style={{
-                              height: `${height}%`,
-                            }}
-                          />
-
-                          <span>
-                            {item.day}
-                          </span>
-
-                        </div>
-                      );
-                    }
-                  )}
-
-                </div>
-
-              </div>
-
-            </div>
-
-            <div className="daily-chart-footer">
-
-              <div>
-                <strong>
-                  {formatCurrency(
-                    highestSpendingDay.amount
-                  )}
-                </strong>
-
-                <span>
-                  Highest single-day spending
-                </span>
-              </div>
-
-              <div>
-                <strong>
-                  Day{" "}
-                  {highestSpendingDay.day || "—"}
-                </strong>
-
-                <span>
-                  Highest spending day
-                </span>
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* =================================================
-              BUDGET ANALYSIS
-          ================================================= */}
-
-          <section className="chart-grid">
-
-            <div className="insight-card budget-insight-card">
-
-              <div className="chart-header">
-
-                <div>
-                  <span className="insight-section-label">
-                    BUDGET ANALYSIS
-                  </span>
-
-                  <h2>
-                    Monthly budget
-                  </h2>
-
-                  <p>
-                    How much of your budget you
-                    have used
-                  </p>
-                </div>
-
-                <div className="chart-header-icon">
-                  <Target size={21} />
-                </div>
-
-              </div>
-
-              {budget > 0 ? (
-                <div className="budget-visual">
-
-                  <div
-                    className="budget-circle"
-                    style={{
-                      "--budget-progress": `${Math.min(
-                        budgetUsage,
-                        100
-                      ) * 3.6}deg`,
-                    }}
-                  >
-                    <div className="budget-circle-inner">
-
-                      <strong>
-                        {Math.round(
-                          budgetUsage
-                        )}
-                        %
-                      </strong>
-
-                      <span>
-                        used
-                      </span>
-
-                    </div>
-                  </div>
-
-                  <div className="budget-details">
-
-                    <div>
-                      <span>
-                        Budget
-                      </span>
-
-                      <strong>
-                        {formatCurrency(
-                          budget
-                        )}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        Spent
-                      </span>
-
-                      <strong>
-                        {formatCurrency(
-                          totals.expense
-                        )}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        Remaining
-                      </span>
-
-                      <strong
-                        className={
-                          remainingBudget <
-                          0
-                            ? "negative-value"
-                            : ""
-                        }
-                      >
-                        {formatCurrency(
-                          remainingBudget
-                        )}
-                      </strong>
-                    </div>
-
-                  </div>
-
-                </div>
-              ) : (
-                <div className="budget-not-set">
-
-                  <Target size={35} />
-
-                  <h3>
-                    No budget set
-                  </h3>
-
-                  <p>
-                    Set a monthly budget from
-                    your dashboard to track your
-                    spending progress.
-                  </p>
-
-                </div>
-              )}
-
-            </div>
-
-            {/* AI STATUS */}
-
-            <div className="insight-card ai-insight-card">
-
-              <div className="chart-header">
-
-                <div>
-                  <span className="insight-section-label">
-                    AI ANALYSIS
-                  </span>
-
-                  <h2>
-                    SpendWise AI
-                  </h2>
-
-                  <p>
-                    Automated analysis of your
-                    transaction data
-                  </p>
-                </div>
-
-                <div className="chart-header-icon ai-chart-icon">
-                  <Sparkles size={21} />
-                </div>
-
-              </div>
-
-              {aiLoading ? (
-                <div className="ai-insight-loading">
-
-                  <div className="ai-loader">
-                    <Sparkles size={26} />
-                  </div>
-
-                  <h3>
-                    Analyzing your spending...
-                  </h3>
-
-                  <p>
-                    SpendWise AI is processing
-                    your transactions.
-                  </p>
-
-                </div>
-              ) : aiData ? (
-                <div className="ai-insight-results">
-
-                  <div className="ai-metric">
-
-                    <span>
-                      Transactions analyzed
-                    </span>
-
-                    <strong>
-                      {aiData.transactionCount ??
-                        selectedTransactions.length}
-                    </strong>
-
-                  </div>
-
-                  <div className="ai-metric">
-
-                    <span>
-                      Average expense
-                    </span>
-
-                    <strong>
-                      {formatCurrency(
-                        aiData.averageExpense ??
-                          0
-                      )}
-                    </strong>
-
-                  </div>
-
-                  <div className="ai-ready">
-
-                    <Sparkles size={17} />
-
-                    <span>
-                      AI analysis ready
-                    </span>
-
-                  </div>
-
-                </div>
-              ) : (
-                <div className="ai-not-ready">
-
-                  <Sparkles size={34} />
-
-                  <h3>
-                    AI analysis available
-                  </h3>
-
-                  <p>
-                    Add more transactions to
-                    generate deeper spending
-                    insights.
-                  </p>
-
-                </div>
-              )}
-
-            </div>
-
-          </section>
-
-          {/* =================================================
-              FINAL MESSAGE
-          ================================================= */}
-
-          <section className="insights-footer-card">
-
-            <div className="footer-sparkle">
-              <Sparkles size={22} />
-            </div>
+          <div className="chart-card-header">
 
             <div>
-              <span>
-                POWERED BY SPENDWISE AI
+
+              <span className="chart-label">
+                EXPENSE BREAKDOWN
               </span>
 
-              <h2>
-                Keep tracking. Keep improving.
-              </h2>
+              <h3>
+                Spending by category
+              </h3>
+
+            </div>
+
+            <div className="chart-icon">
+              <PieChartIcon size={19} />
+            </div>
+
+          </div>
+
+          {categoryData.length === 0 ? (
+
+            <div className="chart-empty">
+
+              <PieChartIcon size={38} />
+
+              <strong>
+                No expense data
+              </strong>
 
               <p>
-                The more consistently you record
-                your transactions, the better your
-                spending patterns become.
+                Add expenses to see your
+                category breakdown.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div className="pie-chart-container">
+
+              <ResponsiveContainer
+                width="100%"
+                height={300}
+              >
+
+                <PieChart>
+
+                  <Pie
+                    data={categoryData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={105}
+                    innerRadius={58}
+                    paddingAngle={3}
+                  >
+
+                    {categoryData.map(
+                      (entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            pieColors[
+                              index %
+                                pieColors.length
+                            ]
+                          }
+                        />
+                      )
+                    )}
+
+                  </Pie>
+
+                  <Tooltip
+                    formatter={
+                      currencyTooltipFormatter
+                    }
+                  />
+
+                </PieChart>
+
+              </ResponsiveContainer>
+
+              <div className="pie-legend">
+
+                {categoryData.map(
+                  (item, index) => (
+
+                    <div
+                      className="legend-item"
+                      key={item.name}
+                    >
+
+                      <span
+                        className="legend-dot"
+                        style={{
+                          background:
+                            pieColors[
+                              index %
+                                pieColors.length
+                            ],
+                        }}
+                      />
+
+                      <span>
+                        {item.name}
+                      </span>
+
+                      <strong>
+                        {formatCurrency(
+                          item.value
+                        )}
+                      </strong>
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            </div>
+
+          )}
+
+        </div>
+
+        {/* DAILY TREND */}
+
+        <div className="chart-card">
+
+          <div className="chart-card-header">
+
+            <div>
+
+              <span className="chart-label">
+                DAILY ACTIVITY
+              </span>
+
+              <h3>
+                Income vs expenses
+              </h3>
+
+            </div>
+
+            <div className="chart-icon">
+              <TrendingUp size={19} />
+            </div>
+
+          </div>
+
+          <ResponsiveContainer
+            width="100%"
+            height={330}
+          >
+
+            <LineChart
+              data={dailyData}
+              margin={{
+                top: 10,
+                right: 10,
+                left: 0,
+                bottom: 5,
+              }}
+            >
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+              />
+
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 11 }}
+              />
+
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) =>
+                  `₹${value}`
+                }
+              />
+
+              <Tooltip
+                formatter={
+                  currencyTooltipFormatter
+                }
+              />
+
+              <Legend />
+
+              <Line
+                type="monotone"
+                dataKey="income"
+                name="Income"
+                stroke="#10b981"
+                strokeWidth={3}
+                dot={false}
+              />
+
+              <Line
+                type="monotone"
+                dataKey="expense"
+                name="Expenses"
+                stroke="#ef4444"
+                strokeWidth={3}
+                dot={false}
+              />
+
+            </LineChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          CHART ROW 2
+      ===================================================== */}
+
+      <section className="charts-grid">
+
+        {/* BAR CHART */}
+
+        <div className="chart-card">
+
+          <div className="chart-card-header">
+
+            <div>
+
+              <span className="chart-label">
+                CATEGORY ANALYSIS
+              </span>
+
+              <h3>
+                Where you spend the most
+              </h3>
+
+            </div>
+
+            <div className="chart-icon">
+              <BarChart3 size={19} />
+            </div>
+
+          </div>
+
+          <ResponsiveContainer
+            width="100%"
+            height={350}
+          >
+
+            <BarChart
+              data={categoryBarData}
+              margin={{
+                top: 15,
+                right: 10,
+                left: 0,
+                bottom: 55,
+              }}
+            >
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+              />
+
+              <XAxis
+                dataKey="category"
+                angle={-35}
+                textAnchor="end"
+                interval={0}
+                tick={{ fontSize: 10 }}
+              />
+
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) =>
+                  `₹${value}`
+                }
+              />
+
+              <Tooltip
+                formatter={
+                  currencyTooltipFormatter
+                }
+              />
+
+              <Bar
+                dataKey="amount"
+                name="Spending"
+                fill="#7c3aed"
+                radius={[
+                  6,
+                  6,
+                  0,
+                  0,
+                ]}
+              />
+
+            </BarChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+        {/* BUDGET ANALYSIS */}
+
+        <div className="chart-card budget-insight-card">
+
+          <div className="chart-card-header">
+
+            <div>
+
+              <span className="chart-label">
+                BUDGET HEALTH
+              </span>
+
+              <h3>
+                Monthly budget
+              </h3>
+
+            </div>
+
+            <div className="chart-icon">
+              <Target size={19} />
+            </div>
+
+          </div>
+
+          <div className="budget-insight-content">
+
+            <div className="budget-circle">
+
+              <div
+                className="budget-circle-progress"
+                style={{
+                  background: `conic-gradient(
+                    #7c3aed ${budgetUsedPercentage}%,
+                    #e5e7eb ${budgetUsedPercentage}% 100%
+                  )`,
+                }}
+              >
+
+                <div className="budget-circle-inner">
+
+                  <strong>
+                    {Math.round(
+                      budgetUsedPercentage
+                    )}
+                    %
+                  </strong>
+
+                  <span>
+                    used
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="budget-details">
+
+              <div>
+                <span>
+                  Monthly budget
+                </span>
+
+                <strong>
+                  {formatCurrency(
+                    budget
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Spent
+                </span>
+
+                <strong>
+                  {formatCurrency(
+                    totals.expense
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Remaining
+                </span>
+
+                <strong
+                  className={
+                    remainingBudget < 0
+                      ? "danger-value"
+                      : "success-value"
+                  }
+                >
+                  {formatCurrency(
+                    remainingBudget
+                  )}
+                </strong>
+              </div>
+
+            </div>
+
+            <div
+              className={`budget-message ${
+                remainingBudget < 0
+                  ? "budget-danger"
+                  : budget > 0 &&
+                    budgetUsedPercentage >=
+                      80
+                  ? "budget-warning"
+                  : "budget-good"
+              }`}
+            >
+
+              {budget <= 0 ? (
+                <>
+                  <Target size={19} />
+
+                  <span>
+                    Set a monthly budget to
+                    track your spending
+                    progress.
+                  </span>
+                </>
+              ) : remainingBudget < 0 ? (
+                <>
+                  <AlertCircle size={19} />
+
+                  <span>
+                    You have exceeded your
+                    budget.
+                  </span>
+                </>
+              ) : budgetUsedPercentage >=
+                80 ? (
+                <>
+                  <AlertCircle size={19} />
+
+                  <span>
+                    You're close to your
+                    monthly spending limit.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <TrendingUp size={19} />
+
+                  <span>
+                    You're currently within
+                    your budget.
+                  </span>
+                </>
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          TRANSACTION OVERVIEW
+      ===================================================== */}
+
+      <section className="chart-card transaction-overview-card">
+
+        <div className="chart-card-header">
+
+          <div>
+
+            <span className="chart-label">
+              TRANSACTION OVERVIEW
+            </span>
+
+            <h3>
+              Income and expense activity
+            </h3>
+
+          </div>
+
+          <div className="chart-icon">
+            <Activity size={19} />
+          </div>
+
+        </div>
+
+        {typeData.length === 0 ? (
+
+          <div className="chart-empty horizontal">
+
+            <Activity size={36} />
+
+            <div>
+              <strong>
+                No transactions yet
+              </strong>
+
+              <p>
+                Add income or expenses to
+                see your activity overview.
               </p>
             </div>
 
-          </section>
-        </>
+          </div>
+
+        ) : (
+
+          <div className="transaction-overview-content">
+
+            <ResponsiveContainer
+              width="100%"
+              height={280}
+            >
+
+              <BarChart
+                data={typeData}
+                layout="vertical"
+                margin={{
+                  top: 10,
+                  right: 30,
+                  left: 30,
+                  bottom: 10,
+                }}
+              >
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                />
+
+                <XAxis
+                  type="number"
+                  allowDecimals={false}
+                />
+
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                />
+
+                <Tooltip />
+
+                <Bar
+                  dataKey="value"
+                  name="Transactions"
+                  fill="#2563eb"
+                  radius={[
+                    0,
+                    7,
+                    7,
+                    0,
+                  ]}
+                  barSize={35}
+                />
+
+              </BarChart>
+
+            </ResponsiveContainer>
+
+            <div className="overview-numbers">
+
+              <div className="overview-number">
+
+                <span>
+                  Total transactions
+                </span>
+
+                <strong>
+                  {
+                    selectedTransactions.length
+                  }
+                </strong>
+
+              </div>
+
+              <div className="overview-number">
+
+                <span>
+                  Highest category
+                </span>
+
+                <strong>
+                  {topCategory
+                    ? topCategory.name
+                    : "—"}
+                </strong>
+
+              </div>
+
+              <div className="overview-number">
+
+                <span>
+                  Highest category spend
+                </span>
+
+                <strong>
+                  {topCategory
+                    ? formatCurrency(
+                        topCategory.value
+                      )
+                    : "₹0"}
+                </strong>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+      </section>
+
+      {/* =====================================================
+          AI DATA
+      ===================================================== */}
+
+      {aiData && (
+
+        <section className="ai-data-card">
+
+          <div className="ai-data-header">
+
+            <div className="ai-data-title">
+
+              <div className="ai-data-icon">
+                <Sparkles size={19} />
+              </div>
+
+              <div>
+
+                <span>
+                  AI ANALYSIS
+                </span>
+
+                <h3>
+                  SpendWise AI results
+                </h3>
+
+              </div>
+
+            </div>
+
+            <div className="ai-connected">
+              <span />
+              Connected
+            </div>
+
+          </div>
+
+          <div className="ai-data-grid">
+
+            <div>
+
+              <span>
+                Transactions processed
+              </span>
+
+              <strong>
+                {aiData.transactionCount ??
+                  transactions.length}
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Average expense
+              </span>
+
+              <strong>
+                {formatCurrency(
+                  aiData.averageExpense ??
+                    averageExpense
+                )}
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Current spending
+              </span>
+
+              <strong>
+                {formatCurrency(
+                  totals.expense
+                )}
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Analysis status
+              </span>
+
+              <strong>
+                Ready
+              </strong>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      )}
+
+      {/* =====================================================
+          NO DATA
+      ===================================================== */}
+
+      {selectedTransactions.length === 0 && (
+
+        <section className="no-data-card">
+
+          <div className="no-data-icon">
+            <BarChart3 size={27} />
+          </div>
+
+          <div>
+
+            <h3>
+              Start tracking your spending
+            </h3>
+
+            <p>
+              There are no transactions for{" "}
+              <strong>
+                {months[selectedMonth]}{" "}
+                {selectedYear}
+              </strong>
+              . Add transactions from the
+              Transactions page to unlock
+              detailed insights and graphs.
+            </p>
+
+          </div>
+
+        </section>
+
       )}
 
     </div>
+  );
+}
+
+// =========================================================
+// SMALL CALENDAR ICON COMPONENT
+// =========================================================
+
+function CalendarIcon() {
+  return (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="18"
+        rx="2"
+      />
+      <line
+        x1="16"
+        y1="2"
+        x2="16"
+        y2="6"
+      />
+      <line
+        x1="8"
+        y1="2"
+        x2="8"
+        y2="6"
+      />
+      <line
+        x1="3"
+        y1="10"
+        x2="21"
+        y2="10"
+      />
+    </svg>
   );
 }
 
